@@ -9,6 +9,7 @@ Een simpel echt 3D horrorspel in Python met `ursina`.
 - Je klikt paarse deuren open om verder te komen
 - Daarna ren je naar de deur om te ontsnappen
 - Krampus jaagt achter je aan
+- Krampus volgt nu slimmer de gangen van het doolhof
 - Krampus kan ook door open deuren heen
 - Als Krampus je raakt, verlies je
 - Druk op `R` voor een nieuw potje

@@ -1,5 +1,6 @@
 """Krampus3000 - een simpel echt 3D horrorspel."""
 
+from collections import deque
 import math
 import random
 
@@ -31,6 +32,8 @@ PIJL_DRAAI_SNELHEID = 120
 PIJL_KIJK_SNELHEID = 80
 KRAMPUS_STRAAL = 0.55
 DEUR_KLIK_AFSTAND = 5
+KRAMPUS_PAD_INTERVAL = 0.25
+KRAMPUS_WEGPUNT_BEREIK = 0.35
 
 # Dit is de 3D kaart van het spel.
 KAART = [
@@ -59,6 +62,17 @@ def kaart_naar_wereld(kolom, rij):
     midden_x = (len(KAART[0]) - 1) * TILE_GROOTTE / 2
     midden_z = (len(KAART) - 1) * TILE_GROOTTE / 2
     return Vec3(kolom * TILE_GROOTTE - midden_x, 0, rij * TILE_GROOTTE - midden_z)
+
+
+def wereld_naar_kaart(plek):
+    """Zet een 3D plek om naar een plek op de kaart."""
+    midden_x = (len(KAART[0]) - 1) * TILE_GROOTTE / 2
+    midden_z = (len(KAART) - 1) * TILE_GROOTTE / 2
+    kolom = int(round((plek.x + midden_x) / TILE_GROOTTE))
+    rij = int(round((plek.z + midden_z) / TILE_GROOTTE))
+    kolom = max(0, min(len(KAART[0]) - 1, kolom))
+    rij = max(0, min(len(KAART) - 1, rij))
+    return kolom, rij
 
 
 def afstand_xz(plek_a, plek_b):
@@ -93,6 +107,10 @@ class Krampus3000Spel:
         self.deur_plek = Vec3(0, 1.6, 0)
         self.sleutel_plekken = []
         self.klik_deuren = []
+        self.klikdeur_per_tegel = {}
+        self.krampus_pad = []
+        self.krampus_pad_doel = None
+        self.krampus_pad_timer = 0.0
         self.beste_tijd = None
         self.tijd_seconden = 0.0
         self.status = "spelen"
@@ -134,6 +152,7 @@ class Krampus3000Spel:
 
         self.muren = []
         self.klik_deuren = []
+        self.klikdeur_per_tegel = {}
         for rij, regel in enumerate(KAART):
             for kolom, teken in enumerate(regel):
                 plek = kaart_naar_wereld(kolom, rij)
@@ -200,7 +219,10 @@ class Krampus3000Spel:
         deur.open_positie = Vec3(plek.x, 0.22, plek.z)
         deur.open_scale = Vec3(schaal.x, 0.25, schaal.z)
         deur.is_open = False
+        deur.kaart_kolom = kolom
+        deur.kaart_rij = rij
         self.klik_deuren.append(deur)
+        self.klikdeur_per_tegel[(kolom, rij)] = deur
 
     def bepaal_klikdeur_schaal(self, kolom, rij):
         """Kies hoe de deur moet staan in de gang."""
@@ -321,6 +343,9 @@ class Krampus3000Spel:
         self.deur.color = kleur(110, 44, 58)
         for klikdeur in self.klik_deuren:
             self.zet_klikdeur_open(klikdeur, False)
+        self.krampus_pad = []
+        self.krampus_pad_doel = None
+        self.krampus_pad_timer = 0.0
         self.heeft_sleutel = False
         self.status = "spelen"
         self.tijd_seconden = 0.0
@@ -407,6 +432,8 @@ class Krampus3000Spel:
         if deur is None:
             return
         self.zet_klikdeur_open(deur, True)
+        self.krampus_pad = []
+        self.krampus_pad_timer = 0.0
         self.melding = "Klik! De deur is open. Pas op: Krampus kan er nu ook door."
         self.werk_tekst_bij()
 
@@ -429,6 +456,83 @@ class Krampus3000Spel:
                 return True
         return False
 
+    def tegel_is_beloopbaar(self, kolom, rij):
+        """Kijk of Krampus over deze kaartplek mag lopen."""
+        if kolom < 0 or rij < 0 or rij >= len(KAART) or kolom >= len(KAART[0]):
+            return False
+
+        if KAART[rij][kolom] == "#":
+            return False
+
+        klikdeur = self.klikdeur_per_tegel.get((kolom, rij))
+        if klikdeur is not None and not klikdeur.is_open:
+            return False
+
+        return True
+
+    def maak_krampus_pad(self):
+        """Zoek een slim pad door het doolhof."""
+        start = wereld_naar_kaart(self.krampus.position)
+        doel = wereld_naar_kaart(self.speler.position)
+        self.krampus_pad_doel = doel
+
+        if start == doel:
+            self.krampus_pad = []
+            return
+
+        wachtrij = deque([start])
+        vorige_stap = {start: None}
+
+        # Zo vindt Krampus een route door gangen en open deuren.
+        while wachtrij:
+            huidige = wachtrij.popleft()
+            if huidige == doel:
+                break
+
+            for verschil_kolom, verschil_rij in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                volgende = (huidige[0] + verschil_kolom, huidige[1] + verschil_rij)
+                if volgende in vorige_stap:
+                    continue
+                if not self.tegel_is_beloopbaar(*volgende) and volgende != doel:
+                    continue
+                vorige_stap[volgende] = huidige
+                wachtrij.append(volgende)
+
+        eind_tegel = doel
+        if doel not in vorige_stap:
+            # Als Krampus je nog niet kan halen, loopt hij alvast zo dicht mogelijk naar je toe.
+            eind_tegel = min(
+                vorige_stap,
+                key=lambda tegel: abs(tegel[0] - doel[0]) + abs(tegel[1] - doel[1]),
+            )
+
+        if eind_tegel == start:
+            self.krampus_pad = []
+            return
+
+        pad = []
+        stap = eind_tegel
+        while stap != start:
+            pad.append(stap)
+            stap = vorige_stap[stap]
+        pad.reverse()
+
+        self.krampus_pad = [kaart_naar_wereld(kolom, rij) for kolom, rij in pad]
+
+    def pak_krampus_doelpunt(self):
+        """Pak het volgende punt waar Krampus naartoe moet."""
+        while self.krampus_pad:
+            doelpunt = self.krampus_pad[0]
+            if afstand_xz(self.krampus.position, doelpunt) <= KRAMPUS_WEGPUNT_BEREIK:
+                self.krampus_pad.pop(0)
+                continue
+            return doelpunt
+
+        if wereld_naar_kaart(self.krampus.position) == wereld_naar_kaart(self.speler.position):
+            return Vec3(self.speler.x, 0, self.speler.z)
+
+        return None
+
     def beweeg_krampus_stap(self, stap):
         """Beweeg Krampus stap voor stap langs muren."""
         nieuwe_x = self.krampus.x + stap.x
@@ -441,18 +545,38 @@ class Krampus3000Spel:
 
     def beweeg_krampus(self):
         """Laat Krampus langzaam naar de speler lopen."""
+        speler_tegel = wereld_naar_kaart(self.speler.position)
+        krampus_tegel = wereld_naar_kaart(self.krampus.position)
+        self.krampus_pad_timer -= time.dt
+
+        if self.krampus_pad_timer <= 0 or self.krampus_pad_doel != speler_tegel or (not self.krampus_pad and krampus_tegel != speler_tegel):
+            self.maak_krampus_pad()
+            self.krampus_pad_timer = KRAMPUS_PAD_INTERVAL
+
+        doelpunt = self.pak_krampus_doelpunt()
+        if doelpunt is None:
+            self.krampus.look_at_2d(self.speler.position, "y")
+            self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
+            return
+
         richting = Vec3(
-            self.speler.x - self.krampus.x,
+            doelpunt.x - self.krampus.x,
             0,
-            self.speler.z - self.krampus.z,
+            doelpunt.z - self.krampus.z,
         )
         if richting.length() <= 0.2:
             return
 
         snelheid = KRAMPUS_SNELHEID + (0.8 if self.heeft_sleutel else 0)
-        stap = richting.normalized() * snelheid * time.dt
+        stap_lengte = min(snelheid * time.dt, richting.length())
+        stap = richting.normalized() * stap_lengte
+        oude_positie = Vec3(self.krampus.x, 0, self.krampus.z)
         self.beweeg_krampus_stap(stap)
-        self.krampus.look_at_2d(self.speler.position, "y")
+        nieuwe_positie = Vec3(self.krampus.x, 0, self.krampus.z)
+        if afstand_xz(oude_positie, nieuwe_positie) <= 0.01:
+            self.krampus_pad = []
+            self.krampus_pad_timer = 0.0
+        self.krampus.look_at_2d(doelpunt, "y")
         self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
 
     def draai_sleutel(self):
