@@ -1,291 +1,411 @@
-"""Krampus3000 - een simpel top-down horrorspel met pygame."""
+"""Krampus3000 - een simpel echt 3D horrorspel."""
 
+import math
 import random
-import sys
 
-import pygame
+from ursina import (
+    AmbientLight,
+    DirectionalLight,
+    Entity,
+    PointLight,
+    Text,
+    Ursina,
+    Vec3,
+    application,
+    camera,
+    color,
+    mouse,
+    time,
+    window,
+)
+from ursina.prefabs.first_person_controller import FirstPersonController
 
 
-# Dit zijn de basisinstellingen van het spelvenster.
-BREEDTE = 960
-HOOGTE = 640
-FPS = 60
 TITEL = "Krampus3000"
+TILE_GROOTTE = 4
+SPELER_SNELHEID = 5
+KRAMPUS_SNELHEID = 2.2
 
-# Dit zijn de belangrijkste kleuren van het spel.
-ACHTERGROND = (16, 10, 18)
-PANEEL = (35, 22, 40)
-TEKST = (240, 235, 240)
-SUBTEKST = (190, 175, 195)
-MIST = (60, 44, 68)
-MUUR = (74, 54, 82)
-MUUR_RAND = (116, 84, 128)
-SPELER = (210, 230, 255)
-SPELER_LICHT = (255, 245, 190)
-MONSTER = (135, 40, 54)
-MONSTER_OOG = (255, 215, 120)
-SLEUTEL = (245, 210, 80)
-DEUR_DICHT = (125, 50, 60)
-DEUR_OPEN = (70, 165, 100)
-
-
-def maak_muren():
-    """Maak een simpele doolhof-kaart."""
-    return [
-        pygame.Rect(0, 0, BREEDTE, 20),
-        pygame.Rect(0, HOOGTE - 20, BREEDTE, 20),
-        pygame.Rect(0, 0, 20, HOOGTE),
-        pygame.Rect(BREEDTE - 20, 0, 20, HOOGTE),
-        pygame.Rect(180, 60, 20, 380),
-        pygame.Rect(340, 20, 20, 240),
-        pygame.Rect(500, 180, 20, 360),
-        pygame.Rect(680, 60, 20, 300),
-        pygame.Rect(820, 260, 20, 220),
-        pygame.Rect(180, 420, 260, 20),
-        pygame.Rect(360, 240, 260, 20),
-        pygame.Rect(520, 520, 220, 20),
-    ]
-
-
-# Dit zijn veilige plekken waar de sleutel kan verschijnen.
-SLEUTEL_PLEKKEN = [
-    (90, 90),
-    (250, 520),
-    (430, 120),
-    (620, 420),
-    (760, 110),
-    (880, 550),
+# Dit is de 3D kaart van het spel.
+KAART = [
+    "#####################",
+    "#S..#........#..K..D#",
+    "#.#.#.######.#.###..#",
+    "#.#...#...K#...#....#",
+    "#.#####.#.#####.###.#",
+    "#.....#.#.....#..K..#",
+    "###.#.#.#####.#####.#",
+    "#...#.#...#...#.....#",
+    "#.###.###.#.###.###.#",
+    "#...K.#...#.....#M..#",
+    "#####################",
 ]
 
 
-def beweeg_rechthoek(rechthoek, snelheid_x, snelheid_y, muren):
-    """Beweeg een rechthoek en stop netjes tegen muren."""
-    rechthoek.x += snelheid_x
-    for muur in muren:
-        if rechthoek.colliderect(muur):
-            if snelheid_x > 0:
-                rechthoek.right = muur.left
-            elif snelheid_x < 0:
-                rechthoek.left = muur.right
-
-    rechthoek.y += snelheid_y
-    for muur in muren:
-        if rechthoek.colliderect(muur):
-            if snelheid_y > 0:
-                rechthoek.bottom = muur.top
-            elif snelheid_y < 0:
-                rechthoek.top = muur.bottom
+def kaart_naar_wereld(kolom, rij):
+    """Zet een plek uit de kaart om naar een 3D plek."""
+    midden_x = (len(KAART[0]) - 1) * TILE_GROOTTE / 2
+    midden_z = (len(KAART) - 1) * TILE_GROOTTE / 2
+    return Vec3(kolom * TILE_GROOTTE - midden_x, 0, rij * TILE_GROOTTE - midden_z)
 
 
-def teken_speler(scherm, speler_rect):
-    """Teken de speler als een kleine held met licht."""
-    pygame.draw.circle(scherm, SPELER_LICHT, speler_rect.center, 46)
-    pygame.draw.circle(scherm, SPELER, speler_rect.center, speler_rect.width // 2)
-    pygame.draw.circle(scherm, (30, 30, 40), (speler_rect.centerx - 6, speler_rect.centery - 4), 3)
-    pygame.draw.circle(scherm, (30, 30, 40), (speler_rect.centerx + 6, speler_rect.centery - 4), 3)
-    pygame.draw.arc(
-        scherm,
-        (30, 30, 40),
-        pygame.Rect(speler_rect.x + 6, speler_rect.y + 10, speler_rect.width - 12, speler_rect.height - 10),
-        0.3,
-        2.8,
-        2,
-    )
+def afstand_xz(plek_a, plek_b):
+    """Bereken de afstand over de grond."""
+    verschil_x = plek_a.x - plek_b.x
+    verschil_z = plek_a.z - plek_b.z
+    return math.sqrt(verschil_x * verschil_x + verschil_z * verschil_z)
 
 
-def teken_monster(scherm, monster_rect):
-    """Teken Krampus als een eng rood monster."""
-    pygame.draw.ellipse(scherm, MONSTER, monster_rect)
-    pygame.draw.ellipse(scherm, (35, 15, 20), monster_rect, 3)
-
-    # Deze hoorntjes maken het monster extra eng.
-    linker_hoorn = [(monster_rect.x + 4, monster_rect.y + 10), (monster_rect.x + 14, monster_rect.y - 14), (monster_rect.x + 24, monster_rect.y + 10)]
-    rechter_hoorn = [(monster_rect.right - 24, monster_rect.y + 10), (monster_rect.right - 14, monster_rect.y - 14), (monster_rect.right - 4, monster_rect.y + 10)]
-    pygame.draw.polygon(scherm, (220, 220, 220), linker_hoorn)
-    pygame.draw.polygon(scherm, (220, 220, 220), rechter_hoorn)
-
-    pygame.draw.circle(scherm, MONSTER_OOG, (monster_rect.centerx - 9, monster_rect.centery - 4), 4)
-    pygame.draw.circle(scherm, MONSTER_OOG, (monster_rect.centerx + 9, monster_rect.centery - 4), 4)
-    pygame.draw.circle(scherm, (0, 0, 0), (monster_rect.centerx - 9, monster_rect.centery - 4), 2)
-    pygame.draw.circle(scherm, (0, 0, 0), (monster_rect.centerx + 9, monster_rect.centery - 4), 2)
-    pygame.draw.arc(
-        scherm,
-        (255, 230, 230),
-        pygame.Rect(monster_rect.x + 8, monster_rect.y + 12, monster_rect.width - 16, monster_rect.height - 12),
-        0.2,
-        2.9,
-        2,
-    )
+def zet_muis_vergrendeld(vergrendeld):
+    """Vergrendel de muis alleen als het venster dat kan."""
+    basis = getattr(application, "base", None)
+    venster = getattr(basis, "win", None)
+    if venster is not None and hasattr(venster, "requestProperties"):
+        mouse.locked = vergrendeld
 
 
-def teken_sleutel(scherm, sleutel_rect):
-    """Teken de gouden sleutel."""
-    pygame.draw.circle(scherm, SLEUTEL, (sleutel_rect.x + 10, sleutel_rect.y + 10), 8, 3)
-    pygame.draw.rect(scherm, SLEUTEL, (sleutel_rect.x + 16, sleutel_rect.y + 8, 18, 4))
-    pygame.draw.rect(scherm, SLEUTEL, (sleutel_rect.x + 26, sleutel_rect.y + 8, 4, 10))
-    pygame.draw.rect(scherm, SLEUTEL, (sleutel_rect.x + 32, sleutel_rect.y + 8, 4, 6))
+class Krampus3000Spel:
+    """Beheer het hele 3D horrorspel."""
 
+    def __init__(self):
+        # Dit maakt het spelvenster netter.
+        window.title = TITEL
+        window.color = color.rgb(8, 6, 10)
+        window.exit_button.visible = False
+        window.fps_counter.enabled = False
+        camera.fov = 92
+        zet_muis_vergrendeld(True)
 
-def teken_achtergrond(scherm, speler_rect):
-    """Teken de donkere kamer met een lichte kring rond de speler."""
-    scherm.fill(ACHTERGROND)
+        self.speler_start = Vec3(0, 1.5, 0)
+        self.krampus_start = Vec3(0, 0, 0)
+        self.deur_plek = Vec3(0, 1.6, 0)
+        self.sleutel_plekken = []
+        self.beste_tijd = None
+        self.tijd_seconden = 0.0
+        self.status = "spelen"
+        self.heeft_sleutel = False
+        self.melding = ""
 
-    # Deze mist maakt de kamer spannender.
-    for index in range(6):
-        pygame.draw.ellipse(scherm, MIST, (index * 170 - 60, HOOGTE - 130 + (index % 2) * 12, 220, 90))
+        self.maak_wereld()
+        self.maak_speler()
+        self.maak_krampus()
+        self.maak_sleutel()
+        self.maak_ui()
+        self.reset_spel()
 
-    # Deze lichtkringen geven het idee van een zaklamp.
-    for straal, alpha in ((120, 40), (90, 55), (60, 75)):
-        licht = pygame.Surface((BREEDTE, HOOGTE), pygame.SRCALPHA)
-        pygame.draw.circle(licht, (255, 240, 170, alpha), speler_rect.center, straal)
-        scherm.blit(licht, (0, 0))
+    def maak_wereld(self):
+        """Bouw de 3D kamer, muren en deur."""
+        vloer_breedte = len(KAART[0]) * TILE_GROOTTE
+        vloer_diepte = len(KAART) * TILE_GROOTTE
 
+        # Een donkere luchtbol maakt het spel meteen enger.
+        self.lucht = Entity(
+            model="sphere",
+            scale=180,
+            double_sided=True,
+            color=color.rgb(18, 10, 16),
+        )
+        self.vloer = Entity(
+            model="plane",
+            scale=(vloer_breedte + 8, 1, vloer_diepte + 8),
+            color=color.rgb(34, 24, 34),
+            texture_scale=(12, 12),
+            collider="box",
+        )
+        self.plafond = Entity(
+            model="cube",
+            scale=(vloer_breedte + 8, 0.5, vloer_diepte + 8),
+            position=(0, 4.4, 0),
+            color=color.rgb(20, 12, 18),
+        )
 
-def teken_tekst(scherm, font_groot, font_klein, heeft_sleutel, status, tijd_seconden, beste_tijd, melding):
-    """Teken de titel en uitleg bovenaan."""
-    titel = font_groot.render("Krampus3000", True, TEKST)
-    if status == "spelen":
-        opdracht = "Pak de sleutel en ontsnap via de deur!" if not heeft_sleutel else "Je hebt de sleutel! Ren nu naar de deur!"
-    elif status == "gewonnen":
-        opdracht = "Goed gedaan! Druk op R voor een nieuw potje."
-    else:
-        opdracht = "Krampus had je te pakken... Druk op R om opnieuw te beginnen."
+        self.muren = []
+        for rij, regel in enumerate(KAART):
+            for kolom, teken in enumerate(regel):
+                plek = kaart_naar_wereld(kolom, rij)
 
-    regel1 = font_klein.render(opdracht, True, TEKST)
-    regel2 = font_klein.render(f"Tijd: {tijd_seconden:.1f} sec", True, SPELER_LICHT)
-    regel3_tekst = "Beste tijd: -" if beste_tijd is None else f"Beste tijd: {beste_tijd:.1f} sec"
-    regel3 = font_klein.render(regel3_tekst, True, SUBTEKST)
-    regel4 = font_klein.render(melding, True, SUBTEKST)
+                if teken == "#":
+                    muur = Entity(
+                        model="cube",
+                        position=(plek.x, 2, plek.z),
+                        scale=(TILE_GROOTTE, 4, TILE_GROOTTE),
+                        color=color.rgb(72, 44, 78),
+                        collider="box",
+                    )
+                    rand = Entity(
+                        parent=muur,
+                        model="cube",
+                        scale=1.02,
+                        color=color.rgba(120, 84, 132, 70),
+                    )
+                    self.muren.append(muur)
+                elif teken == "S":
+                    self.speler_start = Vec3(plek.x, 1.5, plek.z)
+                elif teken == "M":
+                    self.krampus_start = Vec3(plek.x, 0, plek.z)
+                elif teken == "D":
+                    self.deur_plek = Vec3(plek.x, 1.6, plek.z)
+                elif teken == "K":
+                    self.sleutel_plekken.append(Vec3(plek.x, 1.0, plek.z))
 
-    scherm.blit(titel, (24, 20))
-    scherm.blit(regel1, (28, 72))
-    scherm.blit(regel2, (28, 100))
-    scherm.blit(regel3, (220, 100))
-    scherm.blit(regel4, (28, 128))
+        self.deur = Entity(
+            model="cube",
+            position=self.deur_plek,
+            scale=(2.2, 3.2, 0.45),
+            color=color.rgb(110, 44, 58),
+            collider="box",
+        )
+        self.deur_glans = Entity(
+            parent=self.deur,
+            model="cube",
+            scale=(0.18, 0.3, 1.04),
+            x=0.7,
+            y=0.1,
+            color=color.rgba(255, 240, 210, 120),
+        )
 
+        # Licht maakt de kamer beter zichtbaar maar nog steeds spannend.
+        self.ambient_licht = AmbientLight(color=color.rgba(110, 90, 100, 0.35))
+        self.richting_licht = DirectionalLight(color=color.rgba(255, 220, 210, 0.25))
+        self.richting_licht.look_at(Vec3(1, -2, -1))
 
-def reset_spel():
-    """Maak een nieuw spelrondje."""
-    speler_rect = pygame.Rect(60, 70, 28, 28)
-    monster_rect = pygame.Rect(840, 90, 34, 34)
-    sleutel_x, sleutel_y = random.choice(SLEUTEL_PLEKKEN)
-    sleutel_rect = pygame.Rect(sleutel_x, sleutel_y, 36, 20)
-    deur_rect = pygame.Rect(860, 540, 54, 54)
-    return speler_rect, monster_rect, sleutel_rect, deur_rect, False, "spelen", "Blijf uit de buurt van Krampus!"
+    def maak_speler(self):
+        """Maak de speler met een first-person camera."""
+        self.speler = FirstPersonController(
+            position=self.speler_start,
+            speed=SPELER_SNELHEID,
+            origin_y=-0.45,
+        )
+        self.speler.gravity = 0
+        self.speler.cursor.color = color.rgba(255, 255, 255, 180)
+        self.speler_licht = PointLight(
+            parent=self.speler,
+            y=1.2,
+            color=color.rgba(255, 220, 170, 140),
+        )
 
+    def maak_krampus(self):
+        """Maak Krampus als een simpel 3D monster."""
+        self.krampus = Entity(position=self.krampus_start)
+        self.krampus_lijf = Entity(
+            parent=self.krampus,
+            model="cube",
+            y=1.2,
+            scale=(1.1, 2.1, 0.9),
+            color=color.rgb(120, 36, 46),
+        )
+        self.krampus_kop = Entity(
+            parent=self.krampus,
+            model="sphere",
+            y=2.45,
+            scale=1.1,
+            color=color.rgb(142, 44, 56),
+        )
+        self.krampus_oog_links = Entity(
+            parent=self.krampus,
+            model="sphere",
+            position=(-0.22, 2.5, 0.47),
+            scale=0.13,
+            color=color.rgb(255, 210, 120),
+        )
+        self.krampus_oog_rechts = Entity(
+            parent=self.krampus,
+            model="sphere",
+            position=(0.22, 2.5, 0.47),
+            scale=0.13,
+            color=color.rgb(255, 210, 120),
+        )
+        self.krampus_hoorn_links = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(-0.36, 3.1, 0.02),
+            rotation=(0, 0, 28),
+            scale=(0.16, 0.55, 0.16),
+            color=color.rgb(220, 215, 205),
+        )
+        self.krampus_hoorn_rechts = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0.36, 3.1, 0.02),
+            rotation=(0, 0, -28),
+            scale=(0.16, 0.55, 0.16),
+            color=color.rgb(220, 215, 205),
+        )
 
-def speel():
-    """Start het spel en laat alles bewegen."""
-    pygame.init()
-    scherm = pygame.display.set_mode((BREEDTE, HOOGTE))
-    pygame.display.set_caption(TITEL)
-    klok = pygame.time.Clock()
-    font_groot = pygame.font.SysFont("Arial", 38, bold=True)
-    font_klein = pygame.font.SysFont("Arial", 24)
+    def maak_sleutel(self):
+        """Maak de sleutel als een klein 3D voorwerp."""
+        self.sleutel = Entity(
+            model="cube",
+            position=(0, 1.0, 0),
+            scale=(0.28, 0.16, 0.95),
+            color=color.rgb(244, 210, 86),
+        )
+        self.sleutel_ring = Entity(
+            parent=self.sleutel,
+            model="sphere",
+            x=-0.36,
+            scale=(0.48, 0.48, 0.12),
+            color=color.rgb(255, 230, 120),
+        )
 
-    muren = maak_muren()
-    speler_rect, monster_rect, sleutel_rect, deur_rect, heeft_sleutel, status, melding = reset_spel()
-    start_tijd = pygame.time.get_ticks()
-    eind_tijd = None
-    beste_tijd = None
+    def maak_ui(self):
+        """Maak alle tekst op het scherm."""
+        self.titel_tekst = Text("Krampus3000", x=-0.85, y=0.45, scale=2.1, color=color.rgb(255, 245, 250))
+        self.status_tekst = Text("", x=-0.85, y=0.38, scale=1.15, color=color.rgb(240, 230, 240))
+        self.tijd_tekst = Text("", x=-0.85, y=0.32, scale=1.0, color=color.rgb(255, 226, 160))
+        self.beste_tijd_tekst = Text("", x=-0.55, y=0.32, scale=1.0, color=color.rgb(190, 175, 195))
+        self.hint_tekst = Text("", x=-0.85, y=0.26, scale=0.95, color=color.rgb(210, 190, 210))
+        self.besturing_tekst = Text(
+            "WASD = lopen | muis = kijken | R = opnieuw | Esc = stoppen",
+            x=-0.85,
+            y=-0.46,
+            scale=0.9,
+            color=color.rgb(200, 180, 200),
+        )
 
-    while True:
-        delta_ms = klok.tick(FPS)
+    def reset_spel(self):
+        """Begin opnieuw met een nieuw rondje."""
+        self.speler.position = self.speler_start
+        self.speler.rotation = (0, 0, 0)
+        self.speler.camera_pivot.rotation = (0, 0, 0)
+        self.krampus.position = self.krampus_start
+        self.krampus.rotation_y = 0
+        self.sleutel.position = random.choice(self.sleutel_plekken)
+        self.sleutel.enabled = True
+        self.deur.color = color.rgb(110, 44, 58)
+        self.heeft_sleutel = False
+        self.status = "spelen"
+        self.tijd_seconden = 0.0
+        self.melding = "Zoek de sleutel en blijf weg van Krampus."
+        self.speler.enabled = True
+        zet_muis_vergrendeld(True)
+        self.werk_tekst_bij()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            # Met R kun je snel opnieuw beginnen.
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                speler_rect, monster_rect, sleutel_rect, deur_rect, heeft_sleutel, status, melding = reset_spel()
-                start_tijd = pygame.time.get_ticks()
-                eind_tijd = None
-
-        if status == "spelen":
-            toetsen = pygame.key.get_pressed()
-            snelheid = 4
-            beweeg_x = 0
-            beweeg_y = 0
-
-            # Hier leest het spel welke kant jij op wilt lopen.
-            if toetsen[pygame.K_LEFT] or toetsen[pygame.K_a]:
-                beweeg_x -= snelheid
-            if toetsen[pygame.K_RIGHT] or toetsen[pygame.K_d]:
-                beweeg_x += snelheid
-            if toetsen[pygame.K_UP] or toetsen[pygame.K_w]:
-                beweeg_y -= snelheid
-            if toetsen[pygame.K_DOWN] or toetsen[pygame.K_s]:
-                beweeg_y += snelheid
-
-            if beweeg_x != 0 and beweeg_y != 0:
-                beweeg_x = int(beweeg_x * 0.7)
-                beweeg_y = int(beweeg_y * 0.7)
-
-            beweeg_rechthoek(speler_rect, beweeg_x, beweeg_y, muren)
-
-            # Krampus jaagt op de speler en wordt sneller als jij de sleutel hebt.
-            monster_snelheid = 2 if not heeft_sleutel else 3
-            stap_x = 0
-            stap_y = 0
-            if speler_rect.centerx > monster_rect.centerx + 2:
-                stap_x = monster_snelheid
-            elif speler_rect.centerx < monster_rect.centerx - 2:
-                stap_x = -monster_snelheid
-            if speler_rect.centery > monster_rect.centery + 2:
-                stap_y = monster_snelheid
-            elif speler_rect.centery < monster_rect.centery - 2:
-                stap_y = -monster_snelheid
-            beweeg_rechthoek(monster_rect, stap_x, stap_y, muren)
-
-            # Als je de sleutel raakt, gaat de deur open.
-            if not heeft_sleutel and speler_rect.colliderect(sleutel_rect):
-                heeft_sleutel = True
-                melding = "Je hebt de sleutel gevonden!"
-
-            # Zonder sleutel kun je de deur nog niet uit.
-            if speler_rect.colliderect(deur_rect):
-                if heeft_sleutel:
-                    status = "gewonnen"
-                    eind_tijd = (pygame.time.get_ticks() - start_tijd) / 1000
-                    if beste_tijd is None or eind_tijd < beste_tijd:
-                        beste_tijd = eind_tijd
-                    melding = "Je bent ontsnapt aan Krampus!"
-                else:
-                    melding = "De deur zit nog op slot. Zoek de sleutel!"
-
-            # Als Krampus jou raakt, verlies je.
-            if speler_rect.colliderect(monster_rect):
-                status = "verloren"
-                melding = "Ai! Krampus heeft je gevangen."
-
-        # Dit stukje bepaalt welke tijd bovenaan staat.
-        if status == "spelen":
-            tijd_seconden = (pygame.time.get_ticks() - start_tijd) / 1000
+    def werk_tekst_bij(self):
+        """Zet de goede tekst op het scherm."""
+        if self.status == "spelen":
+            if self.heeft_sleutel:
+                opdracht = "Je hebt de sleutel! Ren nu naar de groene deur."
+            else:
+                opdracht = "Zoek de sleutel voordat Krampus je vindt."
+        elif self.status == "gewonnen":
+            opdracht = "Je bent ontsnapt! Druk op R voor nog een potje."
         else:
-            tijd_seconden = 0.0 if eind_tijd is None else eind_tijd
+            opdracht = "Krampus heeft je gepakt... Druk op R om opnieuw te beginnen."
 
-        teken_achtergrond(scherm, speler_rect)
+        self.status_tekst.text = opdracht
+        self.tijd_tekst.text = f"Tijd: {self.tijd_seconden:.1f} sec"
+        if self.beste_tijd is None:
+            self.beste_tijd_tekst.text = "Beste tijd: -"
+        else:
+            self.beste_tijd_tekst.text = f"Beste tijd: {self.beste_tijd:.1f} sec"
+        self.hint_tekst.text = self.melding
 
-        # Eerst tekenen we de muren en de deur.
-        for muur in muren:
-            pygame.draw.rect(scherm, MUUR, muur, border_radius=8)
-            pygame.draw.rect(scherm, MUUR_RAND, muur, 2, border_radius=8)
+    def pak_sleutel(self):
+        """Pak de sleutel en open de deur."""
+        self.heeft_sleutel = True
+        self.sleutel.enabled = False
+        self.deur.color = color.rgb(70, 160, 96)
+        self.melding = "De deur is open! Snel naar de uitgang."
+        self.werk_tekst_bij()
 
-        deur_kleur = DEUR_OPEN if heeft_sleutel else DEUR_DICHT
-        pygame.draw.rect(scherm, deur_kleur, deur_rect, border_radius=10)
-        pygame.draw.rect(scherm, TEKST, deur_rect, 2, border_radius=10)
+    def win_spel(self):
+        """Laat zien dat je gewonnen hebt."""
+        self.status = "gewonnen"
+        self.speler.enabled = False
+        zet_muis_vergrendeld(False)
+        if self.beste_tijd is None or self.tijd_seconden < self.beste_tijd:
+            self.beste_tijd = self.tijd_seconden
+        self.melding = "Krampus was te laat. Jij hebt gewonnen!"
+        self.werk_tekst_bij()
 
-        if not heeft_sleutel:
-            teken_sleutel(scherm, sleutel_rect)
+    def verlies_spel(self):
+        """Laat zien dat je verloren hebt."""
+        self.status = "verloren"
+        self.speler.enabled = False
+        zet_muis_vergrendeld(False)
+        self.melding = "Ai! Krampus greep je te pakken."
+        self.werk_tekst_bij()
 
-        teken_speler(scherm, speler_rect)
-        teken_monster(scherm, monster_rect)
-        teken_tekst(scherm, font_groot, font_klein, heeft_sleutel, status, tijd_seconden, beste_tijd, melding)
+    def beweeg_krampus(self):
+        """Laat Krampus langzaam naar de speler lopen."""
+        richting = Vec3(
+            self.speler.x - self.krampus.x,
+            0,
+            self.speler.z - self.krampus.z,
+        )
+        if richting.length() <= 0.2:
+            return
 
-        pygame.display.flip()
+        snelheid = KRAMPUS_SNELHEID + (0.8 if self.heeft_sleutel else 0)
+        stap = richting.normalized() * snelheid * time.dt
+        self.krampus.position += stap
+        self.krampus.look_at_2d(self.speler.position, "y")
+        self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
+
+    def draai_sleutel(self):
+        """Laat de sleutel draaien en zweven."""
+        if not self.sleutel.enabled:
+            return
+        self.sleutel.rotation_y += 120 * time.dt
+        self.sleutel.y = 1.0 + math.sin(self.tijd_seconden * 4) * 0.12
+
+    def update(self):
+        """Werk alles elke frame bij."""
+        self.draai_sleutel()
+
+        if self.status != "spelen":
+            return
+
+        self.tijd_seconden += time.dt
+        self.speler.y = 1.5
+        self.beweeg_krampus()
+
+        if not self.heeft_sleutel and afstand_xz(self.speler.position, self.sleutel.position) < 1.4:
+            self.pak_sleutel()
+
+        if afstand_xz(self.speler.position, self.deur.position) < 1.7:
+            if self.heeft_sleutel:
+                self.win_spel()
+            else:
+                self.melding = "De deur zit nog op slot. Zoek de sleutel."
+                self.werk_tekst_bij()
+
+        if afstand_xz(self.speler.position, self.krampus.position) < 1.3:
+            self.verlies_spel()
+
+        self.werk_tekst_bij()
+
+    def input(self, toets):
+        """Reageer op toetsen van de speler."""
+        if toets == "r":
+            self.reset_spel()
+        elif toets == "escape":
+            application.quit()
+
+
+spel = None
+
+
+def update():
+    """Stuur de update door naar het spel."""
+    if spel is not None:
+        spel.update()
+
+
+def input(toets):
+    """Stuur invoer door naar het spel."""
+    if spel is not None:
+        spel.input(toets)
+
+
+def main():
+    """Start Krampus3000."""
+    global spel
+    app = Ursina()
+    spel = Krampus3000Spel()
+    app.run()
 
 
 if __name__ == "__main__":
-    speel()
+    main()

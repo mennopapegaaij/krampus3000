@@ -1,10 +1,10 @@
 # Krampus3000
 
-Een simpel top-down horrorspel in Python met `pygame`.
+Een simpel echt 3D horrorspel in Python met `ursina`.
 
 ## Wat doe je in het spel?
 
-- Je loopt rond in een donkere kamer
+- Je loopt rond in een donkere 3D kamer
 - Je zoekt eerst de sleutel
 - Daarna ren je naar de deur om te ontsnappen
 - Krampus jaagt achter je aan
@@ -20,5 +20,7 @@ python main.py
 
 ## Besturing
 
-- `WASD` of pijltjes = lopen
+- `WASD` = lopen
+- Muis = kijken
 - `R` = opnieuw beginnen
+- `Esc` = stoppen
