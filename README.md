@@ -6,8 +6,10 @@ Een simpel echt 3D horrorspel in Python met `ursina`.
 
 - Je loopt rond in een donkere 3D kamer
 - Je zoekt eerst de sleutel
+- Je klikt paarse deuren open om verder te komen
 - Daarna ren je naar de deur om te ontsnappen
 - Krampus jaagt achter je aan
+- Krampus kan ook door open deuren heen
 - Als Krampus je raakt, verlies je
 - Druk op `R` voor een nieuw potje
 
@@ -22,5 +24,6 @@ python main.py
 
 - `WASD` = lopen
 - Pijltjes of muis = kijken en draaien
+- Linkermuisknop = deur openen
 - `R` = opnieuw beginnen
 - `Esc` = stoppen

@@ -16,6 +16,7 @@ from ursina import (
     color,
     held_keys,
     mouse,
+    raycast,
     time,
     window,
 )
@@ -29,17 +30,18 @@ KRAMPUS_SNELHEID = 2.2
 PIJL_DRAAI_SNELHEID = 120
 PIJL_KIJK_SNELHEID = 80
 KRAMPUS_STRAAL = 0.55
+DEUR_KLIK_AFSTAND = 5
 
 # Dit is de 3D kaart van het spel.
 KAART = [
     "#####################",
-    "#S..#........#..K..D#",
+    "#S..#.....O..#..K..D#",
     "#.#.#.######.#.###..#",
     "#.#...#...K#...#....#",
     "#.#####.#.#####.###.#",
-    "#.....#.#.....#..K..#",
+    "#.O...#.#.....#..K..#",
     "###.#.#.#####.#####.#",
-    "#...#.#...#...#.....#",
+    "#...#.#...#...#.O...#",
     "#.###.###.#.###.###.#",
     "#...K.#...#.....#M..#",
     "#####################",
@@ -90,6 +92,7 @@ class Krampus3000Spel:
         self.krampus_start = Vec3(0, 0, 0)
         self.deur_plek = Vec3(0, 1.6, 0)
         self.sleutel_plekken = []
+        self.klik_deuren = []
         self.beste_tijd = None
         self.tijd_seconden = 0.0
         self.status = "spelen"
@@ -130,6 +133,7 @@ class Krampus3000Spel:
         )
 
         self.muren = []
+        self.klik_deuren = []
         for rij, regel in enumerate(KAART):
             for kolom, teken in enumerate(regel):
                 plek = kaart_naar_wereld(kolom, rij)
@@ -157,6 +161,8 @@ class Krampus3000Spel:
                     self.deur_plek = Vec3(plek.x, 1.6, plek.z)
                 elif teken == "K":
                     self.sleutel_plekken.append(Vec3(plek.x, 1.0, plek.z))
+                elif teken == "O":
+                    self.maak_klikdeur(kolom, rij, plek)
 
         self.deur = Entity(
             model="cube",
@@ -178,6 +184,36 @@ class Krampus3000Spel:
         self.ambient_licht = AmbientLight(color=kleur(110, 90, 100, 0.35))
         self.richting_licht = DirectionalLight(color=kleur(255, 220, 210, 0.25))
         self.richting_licht.look_at(Vec3(1, -2, -1))
+
+    def maak_klikdeur(self, kolom, rij, plek):
+        """Maak een deur die je met een klik kunt openen."""
+        schaal = self.bepaal_klikdeur_schaal(kolom, rij)
+        deur = Entity(
+            model="cube",
+            position=(plek.x, 1.6, plek.z),
+            scale=schaal,
+            color=kleur(126, 66, 152),
+            collider="box",
+        )
+        deur.gesloten_positie = Vec3(plek.x, 1.6, plek.z)
+        deur.gesloten_scale = Vec3(schaal.x, schaal.y, schaal.z)
+        deur.open_positie = Vec3(plek.x, 0.22, plek.z)
+        deur.open_scale = Vec3(schaal.x, 0.25, schaal.z)
+        deur.is_open = False
+        self.klik_deuren.append(deur)
+
+    def bepaal_klikdeur_schaal(self, kolom, rij):
+        """Kies hoe de deur moet staan in de gang."""
+        links_blok = KAART[rij][kolom - 1] == "#"
+        rechts_blok = KAART[rij][kolom + 1] == "#"
+        boven_blok = KAART[rij - 1][kolom] == "#"
+        onder_blok = KAART[rij + 1][kolom] == "#"
+
+        if boven_blok and onder_blok:
+            return Vec3(0.45, 3.2, TILE_GROOTTE)
+        if links_blok and rechts_blok:
+            return Vec3(TILE_GROOTTE, 3.2, 0.45)
+        return Vec3(1.4, 3.2, 1.4)
 
     def maak_speler(self):
         """Maak de speler met een first-person camera."""
@@ -266,7 +302,7 @@ class Krampus3000Spel:
         self.beste_tijd_tekst = Text("", x=-0.55, y=0.32, scale=1.0, color=kleur(190, 175, 195))
         self.hint_tekst = Text("", x=-0.85, y=0.26, scale=0.95, color=kleur(210, 190, 210))
         self.besturing_tekst = Text(
-            "WASD = lopen | pijltjes of muis = kijken | R = opnieuw | Esc = stoppen",
+            "WASD = lopen | pijltjes of muis = kijken | klik = deur open | R = opnieuw | Esc = stoppen",
             x=-0.85,
             y=-0.46,
             scale=0.9,
@@ -283,10 +319,12 @@ class Krampus3000Spel:
         self.sleutel.position = random.choice(self.sleutel_plekken)
         self.sleutel.enabled = True
         self.deur.color = kleur(110, 44, 58)
+        for klikdeur in self.klik_deuren:
+            self.zet_klikdeur_open(klikdeur, False)
         self.heeft_sleutel = False
         self.status = "spelen"
         self.tijd_seconden = 0.0
-        self.melding = "Zoek de sleutel en blijf weg van Krampus."
+        self.melding = "Zoek de sleutel, klik deuren open en blijf weg van Krampus."
         self.speler.enabled = True
         zet_muis_vergrendeld(True)
         self.werk_tekst_bij()
@@ -297,7 +335,7 @@ class Krampus3000Spel:
             if self.heeft_sleutel:
                 opdracht = "Je hebt de sleutel! Ren nu naar de groene deur."
             else:
-                opdracht = "Zoek de sleutel voordat Krampus je vindt."
+                opdracht = "Zoek de sleutel, open deuren en blijf weg van Krampus."
         elif self.status == "gewonnen":
             opdracht = "Je bent ontsnapt! Druk op R voor nog een potje."
         else:
@@ -337,12 +375,57 @@ class Krampus3000Spel:
         self.melding = "Ai! Krampus greep je te pakken."
         self.werk_tekst_bij()
 
+    def zet_klikdeur_open(self, deur, open_zetten):
+        """Zet een klikdeur open of dicht."""
+        deur.is_open = open_zetten
+        if open_zetten:
+            deur.position = deur.open_positie
+            deur.scale = deur.open_scale
+            deur.color = kleur(90, 180, 120)
+            deur.collider = None
+        else:
+            deur.position = deur.gesloten_positie
+            deur.scale = deur.gesloten_scale
+            deur.color = kleur(126, 66, 152)
+            deur.collider = "box"
+
+    def pak_geraakte_klikdeur(self):
+        """Zoek of je naar een dichte deur kijkt."""
+        raak = raycast(
+            origin=camera.world_position,
+            direction=camera.forward,
+            distance=DEUR_KLIK_AFSTAND,
+            ignore=(self.speler,),
+        )
+        if raak.hit and raak.entity in self.klik_deuren and not raak.entity.is_open:
+            return raak.entity
+        return None
+
+    def open_geraakte_klikdeur(self):
+        """Open een deur als je erop klikt."""
+        deur = self.pak_geraakte_klikdeur()
+        if deur is None:
+            return
+        self.zet_klikdeur_open(deur, True)
+        self.melding = "Klik! De deur is open. Pas op: Krampus kan er nu ook door."
+        self.werk_tekst_bij()
+
+    def plek_raakt_blok(self, nieuwe_x, nieuwe_z, blok, straal):
+        """Kijk of een ronde botsing een blok raakt."""
+        halve_blok_x = blok.scale_x / 2
+        halve_blok_z = blok.scale_z / 2
+        return abs(nieuwe_x - blok.x) < halve_blok_x + straal and abs(nieuwe_z - blok.z) < halve_blok_z + straal
+
     def krampus_botst_met_muur(self, nieuwe_x, nieuwe_z):
         """Kijk of Krampus op deze plek tegen een muur zou komen."""
         for muur in self.muren:
-            halve_muur_x = muur.scale_x / 2
-            halve_muur_z = muur.scale_z / 2
-            if abs(nieuwe_x - muur.x) < halve_muur_x + KRAMPUS_STRAAL and abs(nieuwe_z - muur.z) < halve_muur_z + KRAMPUS_STRAAL:
+            if self.plek_raakt_blok(nieuwe_x, nieuwe_z, muur, KRAMPUS_STRAAL):
+                return True
+
+        for klikdeur in self.klik_deuren:
+            if klikdeur.is_open:
+                continue
+            if self.plek_raakt_blok(nieuwe_x, nieuwe_z, klikdeur, KRAMPUS_STRAAL):
                 return True
         return False
 
@@ -426,6 +509,8 @@ class Krampus3000Spel:
         """Reageer op toetsen van de speler."""
         if toets == "r":
             self.reset_spel()
+        elif toets == "left mouse down" and self.status == "spelen":
+            self.open_geraakte_klikdeur()
         elif toets == "escape":
             application.quit()
 
