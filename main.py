@@ -28,6 +28,7 @@ SPELER_SNELHEID = 5
 KRAMPUS_SNELHEID = 2.2
 PIJL_DRAAI_SNELHEID = 120
 PIJL_KIJK_SNELHEID = 80
+KRAMPUS_STRAAL = 0.55
 
 # Dit is de 3D kaart van het spel.
 KAART = [
@@ -336,6 +337,25 @@ class Krampus3000Spel:
         self.melding = "Ai! Krampus greep je te pakken."
         self.werk_tekst_bij()
 
+    def krampus_botst_met_muur(self, nieuwe_x, nieuwe_z):
+        """Kijk of Krampus op deze plek tegen een muur zou komen."""
+        for muur in self.muren:
+            halve_muur_x = muur.scale_x / 2
+            halve_muur_z = muur.scale_z / 2
+            if abs(nieuwe_x - muur.x) < halve_muur_x + KRAMPUS_STRAAL and abs(nieuwe_z - muur.z) < halve_muur_z + KRAMPUS_STRAAL:
+                return True
+        return False
+
+    def beweeg_krampus_stap(self, stap):
+        """Beweeg Krampus stap voor stap langs muren."""
+        nieuwe_x = self.krampus.x + stap.x
+        if not self.krampus_botst_met_muur(nieuwe_x, self.krampus.z):
+            self.krampus.x = nieuwe_x
+
+        nieuwe_z = self.krampus.z + stap.z
+        if not self.krampus_botst_met_muur(self.krampus.x, nieuwe_z):
+            self.krampus.z = nieuwe_z
+
     def beweeg_krampus(self):
         """Laat Krampus langzaam naar de speler lopen."""
         richting = Vec3(
@@ -348,7 +368,7 @@ class Krampus3000Spel:
 
         snelheid = KRAMPUS_SNELHEID + (0.8 if self.heeft_sleutel else 0)
         stap = richting.normalized() * snelheid * time.dt
-        self.krampus.position += stap
+        self.beweeg_krampus_stap(stap)
         self.krampus.look_at_2d(self.speler.position, "y")
         self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
 
