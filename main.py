@@ -5,6 +5,7 @@ import math
 
 from ursina import (
     AmbientLight,
+    Audio,
     DirectionalLight,
     Entity,
     PointLight,
@@ -36,6 +37,7 @@ KRAMPUS_PAD_INTERVAL = 0.25
 KRAMPUS_WEGPUNT_BEREIK = 0.35
 KRAMPUS_DEUR_AFSTAND = 1.35
 KRAMPUS_DEUR_AUTO_DICHT_TIJD = 1.6
+KRAMPUS_GELUID_AFSTAND = 30
 
 SLEUTEL_INFO = {
     "a": {"deur": "1", "naam": "rode", "kleur": (236, 92, 92)},
@@ -212,6 +214,9 @@ class Krampus3000Spel:
         self.krampus_pad_timer = 0.0
         self.krampus_laatste_speler_plek = None
         self.krampus_vlucht_plek = None
+        self.krampus_stap_geluid = None
+        self.krampus_stap_timer = 0.0
+        self.krampus_beweegt = False
 
         self.maak_wereld()
         self.maak_speler()
@@ -219,6 +224,7 @@ class Krampus3000Spel:
         self.maak_sleutels()
         self.maak_kasten()
         self.maak_ui()
+        self.maak_geluiden()
         self.reset_spel()
 
     def maak_wereld(self):
@@ -500,6 +506,11 @@ class Krampus3000Spel:
             color=kleur(200, 180, 200),
         )
 
+    def maak_geluiden(self):
+        """Maak de geluiden van het spel."""
+        self.krampus_stap_geluid = Audio("krampus_step.wav", autoplay=False, auto_destroy=False)
+        self.krampus_stap_geluid.volume = 0
+
     def reset_spel(self):
         """Begin opnieuw met een nieuw rondje."""
         if self.actieve_kast is not None:
@@ -530,11 +541,14 @@ class Krampus3000Spel:
         self.krampus_pad_timer = 0.0
         self.krampus_laatste_speler_plek = Vec3(self.speler.x, 0, self.speler.z)
         self.krampus_vlucht_plek = None
+        self.krampus_stap_timer = 0.0
+        self.krampus_beweegt = False
         self.heeft_sleutel = False
         self.status = "spelen"
         self.tijd_seconden = 0.0
         self.melding = "Zoek 5 sleutels, open deuren en verstop je in een kast."
         self.speler.enabled = True
+        self.krampus_stap_geluid.stop(destroy=False)
         zet_muis_vergrendeld(True)
         self.werk_uitgang_bij()
         self.werk_tekst_bij()
@@ -595,6 +609,7 @@ class Krampus3000Spel:
         """Laat zien dat je gewonnen hebt."""
         self.status = "gewonnen"
         self.speler.enabled = False
+        self.krampus_stap_geluid.stop(destroy=False)
         zet_muis_vergrendeld(False)
         if self.beste_tijd is None or self.tijd_seconden < self.beste_tijd:
             self.beste_tijd = self.tijd_seconden
@@ -605,6 +620,7 @@ class Krampus3000Spel:
         """Laat zien dat je verloren hebt."""
         self.status = "verloren"
         self.speler.enabled = False
+        self.krampus_stap_geluid.stop(destroy=False)
         zet_muis_vergrendeld(False)
         self.melding = "Ai! Krampus greep je te pakken."
         self.werk_tekst_bij()
@@ -945,6 +961,7 @@ class Krampus3000Spel:
 
     def beweeg_krampus(self):
         """Laat Krampus langzaam naar de speler lopen."""
+        self.krampus_beweegt = False
         doel_plek = self.pak_krampus_jacht_plek()
         if doel_plek is None:
             self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
@@ -981,6 +998,8 @@ class Krampus3000Spel:
         if afstand_xz(oude_positie, nieuwe_positie) <= 0.01:
             self.krampus_pad = []
             self.krampus_pad_timer = 0.0
+        else:
+            self.krampus_beweegt = True
         self.krampus.look_at_2d(doelpunt, "y")
         self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
 
@@ -991,6 +1010,26 @@ class Krampus3000Spel:
                 continue
             sleutel.rotation_y += 120 * time.dt
             sleutel.y = sleutel.start_positie.y + math.sin(self.tijd_seconden * 4 + sleutel.start_positie.x * 0.05) * 0.12
+
+    def werk_krampus_geluid_bij(self):
+        """Speel stapgeluiden als Krampus dichterbij komt."""
+        if self.krampus_stap_geluid is None or self.status != "spelen":
+            return
+
+        afstand = afstand_xz(self.speler.position, self.krampus.position)
+        if not self.krampus_beweegt or afstand > KRAMPUS_GELUID_AFSTAND:
+            self.krampus_stap_timer = 0.0
+            return
+
+        dichtbij_factor = max(0.0, min(1.0, 1.0 - (afstand / KRAMPUS_GELUID_AFSTAND)))
+        self.krampus_stap_timer -= time.dt
+        if self.krampus_stap_timer > 0:
+            return
+
+        self.krampus_stap_geluid.volume = 0.08 + dichtbij_factor * 0.55
+        self.krampus_stap_geluid.pitch = 0.88 + dichtbij_factor * 0.18
+        self.krampus_stap_geluid.play()
+        self.krampus_stap_timer = 0.78 - dichtbij_factor * 0.46
 
     def update(self):
         """Werk alles elke frame bij."""
@@ -1026,6 +1065,7 @@ class Krampus3000Spel:
             )
 
         self.beweeg_krampus()
+        self.werk_krampus_geluid_bij()
 
         for sleutel in self.sleutels:
             if sleutel.enabled and afstand_xz(self.speler.position, sleutel.position) < 1.4:

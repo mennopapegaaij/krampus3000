@@ -10,6 +10,7 @@ Een simpel echt 3D horrorspel in Python met `ursina`.
 - Je opent 5 slotdeuren met de goede sleutel
 - Krampus jaagt achter je aan
 - Krampus volgt slimmer de gangen van het doolhof
+- Je hoort Krampus stappen als hij dichterbij komt
 - Deuren voor Krampus gaan vanzelf open en daarna weer dicht
 - Je kunt je verstoppen in een kast zodat Krampus wegloopt
 - Als je alle 5 sleutels hebt, kun je naar de uitgang rennen
