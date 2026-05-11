@@ -42,6 +42,12 @@ KAART = [
 ]
 
 
+def kleur(rood, groen, blauw, alpha=1.0):
+    """Maak een Ursina-kleur met gewone 0-255 getallen."""
+    echte_alpha = alpha if alpha <= 1 else alpha / 255
+    return color.rgba(rood / 255, groen / 255, blauw / 255, echte_alpha)
+
+
 def kaart_naar_wereld(kolom, rij):
     """Zet een plek uit de kaart om naar een 3D plek."""
     midden_x = (len(KAART[0]) - 1) * TILE_GROOTTE / 2
@@ -70,7 +76,7 @@ class Krampus3000Spel:
     def __init__(self):
         # Dit maakt het spelvenster netter.
         window.title = TITEL
-        window.color = color.rgb(8, 6, 10)
+        window.color = kleur(8, 6, 10)
         window.exit_button.visible = False
         window.fps_counter.enabled = False
         camera.fov = 92
@@ -103,12 +109,12 @@ class Krampus3000Spel:
             model="sphere",
             scale=180,
             double_sided=True,
-            color=color.rgb(18, 10, 16),
+            color=kleur(18, 10, 16),
         )
         self.vloer = Entity(
             model="plane",
             scale=(vloer_breedte + 8, 1, vloer_diepte + 8),
-            color=color.rgb(34, 24, 34),
+            color=kleur(34, 24, 34),
             texture_scale=(12, 12),
             collider="box",
         )
@@ -116,7 +122,7 @@ class Krampus3000Spel:
             model="cube",
             scale=(vloer_breedte + 8, 0.5, vloer_diepte + 8),
             position=(0, 4.4, 0),
-            color=color.rgb(20, 12, 18),
+            color=kleur(20, 12, 18),
         )
 
         self.muren = []
@@ -129,14 +135,14 @@ class Krampus3000Spel:
                         model="cube",
                         position=(plek.x, 2, plek.z),
                         scale=(TILE_GROOTTE, 4, TILE_GROOTTE),
-                        color=color.rgb(72, 44, 78),
+                        color=kleur(72, 44, 78),
                         collider="box",
                     )
                     rand = Entity(
                         parent=muur,
                         model="cube",
                         scale=1.02,
-                        color=color.rgba(120, 84, 132, 70),
+                        color=kleur(120, 84, 132, 70),
                     )
                     self.muren.append(muur)
                 elif teken == "S":
@@ -152,7 +158,7 @@ class Krampus3000Spel:
             model="cube",
             position=self.deur_plek,
             scale=(2.2, 3.2, 0.45),
-            color=color.rgb(110, 44, 58),
+            color=kleur(110, 44, 58),
             collider="box",
         )
         self.deur_glans = Entity(
@@ -161,12 +167,12 @@ class Krampus3000Spel:
             scale=(0.18, 0.3, 1.04),
             x=0.7,
             y=0.1,
-            color=color.rgba(255, 240, 210, 120),
+            color=kleur(255, 240, 210, 120),
         )
 
         # Licht maakt de kamer beter zichtbaar maar nog steeds spannend.
-        self.ambient_licht = AmbientLight(color=color.rgba(110, 90, 100, 0.35))
-        self.richting_licht = DirectionalLight(color=color.rgba(255, 220, 210, 0.25))
+        self.ambient_licht = AmbientLight(color=kleur(110, 90, 100, 0.35))
+        self.richting_licht = DirectionalLight(color=kleur(255, 220, 210, 0.25))
         self.richting_licht.look_at(Vec3(1, -2, -1))
 
     def maak_speler(self):
@@ -177,11 +183,11 @@ class Krampus3000Spel:
             origin_y=-0.45,
         )
         self.speler.gravity = 0
-        self.speler.cursor.color = color.rgba(255, 255, 255, 180)
+        self.speler.cursor.color = kleur(255, 255, 255, 180)
         self.speler_licht = PointLight(
             parent=self.speler,
             y=1.2,
-            color=color.rgba(255, 220, 170, 140),
+            color=kleur(255, 220, 170, 140),
         )
 
     def maak_krampus(self):
@@ -192,28 +198,28 @@ class Krampus3000Spel:
             model="cube",
             y=1.2,
             scale=(1.1, 2.1, 0.9),
-            color=color.rgb(120, 36, 46),
+            color=kleur(120, 36, 46),
         )
         self.krampus_kop = Entity(
             parent=self.krampus,
             model="sphere",
             y=2.45,
             scale=1.1,
-            color=color.rgb(142, 44, 56),
+            color=kleur(142, 44, 56),
         )
         self.krampus_oog_links = Entity(
             parent=self.krampus,
             model="sphere",
             position=(-0.22, 2.5, 0.47),
             scale=0.13,
-            color=color.rgb(255, 210, 120),
+            color=kleur(255, 210, 120),
         )
         self.krampus_oog_rechts = Entity(
             parent=self.krampus,
             model="sphere",
             position=(0.22, 2.5, 0.47),
             scale=0.13,
-            color=color.rgb(255, 210, 120),
+            color=kleur(255, 210, 120),
         )
         self.krampus_hoorn_links = Entity(
             parent=self.krampus,
@@ -221,7 +227,7 @@ class Krampus3000Spel:
             position=(-0.36, 3.1, 0.02),
             rotation=(0, 0, 28),
             scale=(0.16, 0.55, 0.16),
-            color=color.rgb(220, 215, 205),
+            color=kleur(220, 215, 205),
         )
         self.krampus_hoorn_rechts = Entity(
             parent=self.krampus,
@@ -229,7 +235,7 @@ class Krampus3000Spel:
             position=(0.36, 3.1, 0.02),
             rotation=(0, 0, -28),
             scale=(0.16, 0.55, 0.16),
-            color=color.rgb(220, 215, 205),
+            color=kleur(220, 215, 205),
         )
 
     def maak_sleutel(self):
@@ -238,29 +244,29 @@ class Krampus3000Spel:
             model="cube",
             position=(0, 1.0, 0),
             scale=(0.28, 0.16, 0.95),
-            color=color.rgb(244, 210, 86),
+            color=kleur(244, 210, 86),
         )
         self.sleutel_ring = Entity(
             parent=self.sleutel,
             model="sphere",
             x=-0.36,
             scale=(0.48, 0.48, 0.12),
-            color=color.rgb(255, 230, 120),
+            color=kleur(255, 230, 120),
         )
 
     def maak_ui(self):
         """Maak alle tekst op het scherm."""
-        self.titel_tekst = Text("Krampus3000", x=-0.85, y=0.45, scale=2.1, color=color.rgb(255, 245, 250))
-        self.status_tekst = Text("", x=-0.85, y=0.38, scale=1.15, color=color.rgb(240, 230, 240))
-        self.tijd_tekst = Text("", x=-0.85, y=0.32, scale=1.0, color=color.rgb(255, 226, 160))
-        self.beste_tijd_tekst = Text("", x=-0.55, y=0.32, scale=1.0, color=color.rgb(190, 175, 195))
-        self.hint_tekst = Text("", x=-0.85, y=0.26, scale=0.95, color=color.rgb(210, 190, 210))
+        self.titel_tekst = Text("Krampus3000", x=-0.85, y=0.45, scale=2.1, color=kleur(255, 245, 250))
+        self.status_tekst = Text("", x=-0.85, y=0.38, scale=1.15, color=kleur(240, 230, 240))
+        self.tijd_tekst = Text("", x=-0.85, y=0.32, scale=1.0, color=kleur(255, 226, 160))
+        self.beste_tijd_tekst = Text("", x=-0.55, y=0.32, scale=1.0, color=kleur(190, 175, 195))
+        self.hint_tekst = Text("", x=-0.85, y=0.26, scale=0.95, color=kleur(210, 190, 210))
         self.besturing_tekst = Text(
             "WASD = lopen | muis = kijken | R = opnieuw | Esc = stoppen",
             x=-0.85,
             y=-0.46,
             scale=0.9,
-            color=color.rgb(200, 180, 200),
+            color=kleur(200, 180, 200),
         )
 
     def reset_spel(self):
@@ -272,7 +278,7 @@ class Krampus3000Spel:
         self.krampus.rotation_y = 0
         self.sleutel.position = random.choice(self.sleutel_plekken)
         self.sleutel.enabled = True
-        self.deur.color = color.rgb(110, 44, 58)
+        self.deur.color = kleur(110, 44, 58)
         self.heeft_sleutel = False
         self.status = "spelen"
         self.tijd_seconden = 0.0
@@ -305,7 +311,7 @@ class Krampus3000Spel:
         """Pak de sleutel en open de deur."""
         self.heeft_sleutel = True
         self.sleutel.enabled = False
-        self.deur.color = color.rgb(70, 160, 96)
+        self.deur.color = kleur(70, 160, 96)
         self.melding = "De deur is open! Snel naar de uitgang."
         self.werk_tekst_bij()
 
@@ -402,7 +408,7 @@ def input(toets):
 def main():
     """Start Krampus3000."""
     global spel
-    app = Ursina()
+    app = Ursina(development_mode=False, editor_ui_enabled=False)
     spel = Krampus3000Spel()
     app.run()
 
