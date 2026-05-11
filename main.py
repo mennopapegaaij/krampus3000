@@ -34,6 +34,8 @@ DEUR_KLIK_AFSTAND = 5
 KAST_KLIK_AFSTAND = 3
 KRAMPUS_PAD_INTERVAL = 0.25
 KRAMPUS_WEGPUNT_BEREIK = 0.35
+KRAMPUS_DEUR_AFSTAND = 1.35
+KRAMPUS_DEUR_AUTO_DICHT_TIJD = 1.6
 
 SLEUTEL_INFO = {
     "a": {"deur": "1", "naam": "rode", "kleur": (236, 92, 92)},
@@ -209,6 +211,7 @@ class Krampus3000Spel:
         self.krampus_pad_doel = None
         self.krampus_pad_timer = 0.0
         self.krampus_laatste_speler_plek = None
+        self.krampus_vlucht_plek = None
 
         self.maak_wereld()
         self.maak_speler()
@@ -323,6 +326,8 @@ class Krampus3000Spel:
         deur.open_positie = Vec3(plek.x, 0.22, plek.z)
         deur.open_scale = Vec3(schaal.x, 0.25, schaal.z)
         deur.is_open = False
+        deur.krampus_auto_dicht_timer = 0.0
+        deur.krampus_opende_deur = False
         deur.kaart_kolom = kolom
         deur.kaart_rij = rij
         self.klik_deuren.append(deur)
@@ -345,6 +350,8 @@ class Krampus3000Spel:
         deur.open_positie = Vec3(plek.x, 0.22, plek.z)
         deur.open_scale = Vec3(schaal.x, 0.25, schaal.z)
         deur.is_open = False
+        deur.krampus_auto_dicht_timer = 0.0
+        deur.krampus_opende_deur = False
         deur.sleutel_id = sleutel_id
         deur.deur_teken = deur_teken
         deur.kaart_kolom = kolom
@@ -522,6 +529,7 @@ class Krampus3000Spel:
         self.krampus_pad_doel = None
         self.krampus_pad_timer = 0.0
         self.krampus_laatste_speler_plek = Vec3(self.speler.x, 0, self.speler.z)
+        self.krampus_vlucht_plek = None
         self.heeft_sleutel = False
         self.status = "spelen"
         self.tijd_seconden = 0.0
@@ -614,6 +622,9 @@ class Krampus3000Spel:
             deur.scale = deur.gesloten_scale
             deur.color = kleur(126, 66, 152)
             deur.collider = "box"
+        if not open_zetten:
+            deur.krampus_auto_dicht_timer = 0.0
+            deur.krampus_opende_deur = False
 
     def zet_slotdeur_open(self, deur, open_zetten):
         """Zet een slotdeur open of dicht."""
@@ -636,6 +647,9 @@ class Krampus3000Spel:
                     max(40, basis_kleur[2] - 90),
                 )
             deur.collider = "box"
+        if not open_zetten:
+            deur.krampus_auto_dicht_timer = 0.0
+            deur.krampus_opende_deur = False
 
     def pak_geraakt_object(self):
         """Zoek waar de speler nu naar kijkt."""
@@ -665,7 +679,8 @@ class Krampus3000Spel:
         self.speler.position = kast.verstop_plek
         self.krampus_pad = []
         self.krampus_pad_timer = 0.0
-        self.melding = "Je zit verstopt in de kast. Klik om er weer uit te gaan."
+        self.krampus_vlucht_plek = None
+        self.melding = "Je zit verstopt in de kast. Krampus loopt nu weg."
         self.werk_tekst_bij()
 
     def verlaat_kast(self):
@@ -683,6 +698,7 @@ class Krampus3000Spel:
         self.actieve_kast = None
         self.verstop_terug_plek = None
         self.krampus_laatste_speler_plek = Vec3(self.speler.x, 0, self.speler.z)
+        self.krampus_vlucht_plek = None
         self.melding = "Je bent weer uit de kast."
         self.werk_tekst_bij()
 
@@ -744,11 +760,89 @@ class Krampus3000Spel:
         if KAART[rij][kolom] == "#":
             return False
 
-        klikdeur = self.klikdeur_per_tegel.get((kolom, rij))
-        if klikdeur is not None and not klikdeur.is_open:
-            return False
-
         return True
+
+    def pak_verste_loopplek_van(self, start_plek):
+        """Zoek een verre plek zodat Krampus van de kast wegloopt."""
+        speler_tegel = wereld_naar_kaart(start_plek)
+        krampus_tegel = wereld_naar_kaart(self.krampus.position)
+        wachtrij = deque([krampus_tegel])
+        vorige_stap = {krampus_tegel: None}
+        beste_tegel = None
+        beste_score = (-1, -1)
+
+        # Zo kiest Krampus een pad dat meteen van de kast af beweegt.
+        while wachtrij:
+            huidige = wachtrij.popleft()
+
+            for verschil_kolom, verschil_rij in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                volgende = (huidige[0] + verschil_kolom, huidige[1] + verschil_rij)
+                if volgende in vorige_stap:
+                    continue
+                if not self.tegel_is_beloopbaar(*volgende):
+                    continue
+                vorige_stap[volgende] = huidige
+                wachtrij.append(volgende)
+
+        for tegel in vorige_stap:
+            if tegel == krampus_tegel:
+                continue
+
+            eerste_stap = tegel
+            while vorige_stap[eerste_stap] != krampus_tegel:
+                eerste_stap = vorige_stap[eerste_stap]
+
+            eerste_score = abs(eerste_stap[0] - speler_tegel[0]) + abs(eerste_stap[1] - speler_tegel[1])
+            totale_score = abs(tegel[0] - speler_tegel[0]) + abs(tegel[1] - speler_tegel[1])
+            score = (eerste_score, totale_score)
+            if score > beste_score:
+                beste_score = score
+                beste_tegel = tegel
+
+        if beste_tegel is None:
+            return None
+        return kaart_naar_wereld(beste_tegel[0], beste_tegel[1])
+
+    def open_deur_voor_krampus(self, deur):
+        """Laat een deur voor Krampus even open gaan."""
+        if deur in self.klik_deuren:
+            self.zet_klikdeur_open(deur, True)
+        else:
+            self.zet_slotdeur_open(deur, True)
+
+        deur.krampus_opende_deur = True
+        deur.krampus_auto_dicht_timer = KRAMPUS_DEUR_AUTO_DICHT_TIJD
+
+    def open_deuren_bij_krampus(self, nieuwe_x, nieuwe_z):
+        """Open deuren waar Krampus bijna tegenaan loopt."""
+        for deur in self.klik_deuren + self.slot_deuren:
+            if deur.is_open:
+                continue
+            if self.plek_raakt_blok(nieuwe_x, nieuwe_z, deur, KRAMPUS_DEUR_AFSTAND):
+                self.open_deur_voor_krampus(deur)
+
+    def werk_krampus_deuren_bij(self):
+        """Laat deuren achter Krampus weer dichtgaan."""
+        for deur in self.klik_deuren + self.slot_deuren:
+            if not deur.krampus_opende_deur:
+                continue
+
+            deur.krampus_auto_dicht_timer -= time.dt
+            if deur.krampus_auto_dicht_timer > 0:
+                continue
+
+            if afstand_xz(self.krampus.position, deur.position) < 1.8:
+                deur.krampus_auto_dicht_timer = 0.2
+                continue
+
+            if not self.verstopt_in_kast and afstand_xz(self.speler.position, deur.position) < 1.8:
+                deur.krampus_auto_dicht_timer = 0.2
+                continue
+
+            if deur in self.klik_deuren:
+                self.zet_klikdeur_open(deur, False)
+            else:
+                self.zet_slotdeur_open(deur, False)
 
     def maak_krampus_pad(self, doel_plek):
         """Zoek een slim pad door het doolhof."""
@@ -822,21 +916,30 @@ class Krampus3000Spel:
         if self.verstopt_in_kast:
             if self.krampus_laatste_speler_plek is None:
                 return None
-            if afstand_xz(self.krampus.position, self.krampus_laatste_speler_plek) <= 0.8:
+
+            if self.krampus_vlucht_plek is None:
+                self.krampus_vlucht_plek = self.pak_verste_loopplek_van(self.krampus_laatste_speler_plek)
+
+            if self.krampus_vlucht_plek is None:
                 return None
-            return self.krampus_laatste_speler_plek
+            if afstand_xz(self.krampus.position, self.krampus_vlucht_plek) <= 0.8:
+                return None
+            return self.krampus_vlucht_plek
 
         doel_plek = Vec3(self.speler.x, 0, self.speler.z)
         self.krampus_laatste_speler_plek = doel_plek
+        self.krampus_vlucht_plek = None
         return doel_plek
 
     def beweeg_krampus_stap(self, stap):
         """Beweeg Krampus stap voor stap langs muren."""
         nieuwe_x = self.krampus.x + stap.x
+        self.open_deuren_bij_krampus(nieuwe_x, self.krampus.z)
         if not self.krampus_botst_met_muur(nieuwe_x, self.krampus.z):
             self.krampus.x = nieuwe_x
 
         nieuwe_z = self.krampus.z + stap.z
+        self.open_deuren_bij_krampus(self.krampus.x, nieuwe_z)
         if not self.krampus_botst_met_muur(self.krampus.x, nieuwe_z):
             self.krampus.z = nieuwe_z
 
@@ -892,6 +995,7 @@ class Krampus3000Spel:
     def update(self):
         """Werk alles elke frame bij."""
         self.draai_sleutels()
+        self.werk_krampus_deuren_bij()
 
         if self.status != "spelen":
             return
