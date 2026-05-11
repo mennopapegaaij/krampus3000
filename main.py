@@ -14,6 +14,7 @@ from ursina import (
     application,
     camera,
     color,
+    held_keys,
     mouse,
     time,
     window,
@@ -25,6 +26,8 @@ TITEL = "Krampus3000"
 TILE_GROOTTE = 4
 SPELER_SNELHEID = 5
 KRAMPUS_SNELHEID = 2.2
+PIJL_DRAAI_SNELHEID = 120
+PIJL_KIJK_SNELHEID = 80
 
 # Dit is de 3D kaart van het spel.
 KAART = [
@@ -262,7 +265,7 @@ class Krampus3000Spel:
         self.beste_tijd_tekst = Text("", x=-0.55, y=0.32, scale=1.0, color=kleur(190, 175, 195))
         self.hint_tekst = Text("", x=-0.85, y=0.26, scale=0.95, color=kleur(210, 190, 210))
         self.besturing_tekst = Text(
-            "WASD = lopen | muis = kijken | R = opnieuw | Esc = stoppen",
+            "WASD = lopen | pijltjes of muis = kijken | R = opnieuw | Esc = stoppen",
             x=-0.85,
             y=-0.46,
             scale=0.9,
@@ -365,6 +368,23 @@ class Krampus3000Spel:
 
         self.tijd_seconden += time.dt
         self.speler.y = 1.5
+
+        # Met de pijltjes kun je ook rondkijken.
+        if held_keys["left arrow"]:
+            self.speler.rotation_y -= PIJL_DRAAI_SNELHEID * time.dt
+        if held_keys["right arrow"]:
+            self.speler.rotation_y += PIJL_DRAAI_SNELHEID * time.dt
+        if held_keys["up arrow"]:
+            self.speler.camera_pivot.rotation_x = max(
+                -90,
+                self.speler.camera_pivot.rotation_x - PIJL_KIJK_SNELHEID * time.dt,
+            )
+        if held_keys["down arrow"]:
+            self.speler.camera_pivot.rotation_x = min(
+                90,
+                self.speler.camera_pivot.rotation_x + PIJL_KIJK_SNELHEID * time.dt,
+            )
+
         self.beweeg_krampus()
 
         if not self.heeft_sleutel and afstand_xz(self.speler.position, self.sleutel.position) < 1.4:

@@ -21,6 +21,6 @@ python main.py
 ## Besturing
 
 - `WASD` = lopen
-- Muis = kijken
+- Pijltjes of muis = kijken en draaien
 - `R` = opnieuw beginnen
 - `Esc` = stoppen
