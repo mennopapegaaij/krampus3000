@@ -8,7 +8,7 @@ Een simpel echt 3D horrorspel in Python met `ursina`.
 - Je zoekt 5 gekleurde sleutels
 - Je opent gewone deuren met een klik
 - Je opent 5 slotdeuren met de goede sleutel
-- De kamer heeft nu oude houten vloeren en vieze muren
+- De kamer heeft nu oude houten vloeren, vieze muren en donkere houten deuren
 - Krampus jaagt achter je aan
 - Krampus volgt slimmer de gangen van het doolhof
 - Je hoort Krampus stappen als hij dichterbij komt

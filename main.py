@@ -41,6 +41,7 @@ KRAMPUS_GELUID_AFSTAND = 30
 TEXTUUR_VLOER = "textures/vloer_hout.ppm"
 TEXTUUR_PLAFOND = "textures/plafond_hout.ppm"
 TEXTUUR_MUUR = "textures/muur_vies.ppm"
+TEXTUUR_DEUR = "textures/deur_oud.ppm"
 
 SLEUTEL_INFO = {
     "a": {"deur": "1", "naam": "rode", "kleur": (236, 92, 92)},
@@ -280,8 +281,8 @@ class Krampus3000Spel:
                         position=(plek.x, 2, plek.z),
                         scale=(TILE_GROOTTE, 4, TILE_GROOTTE),
                         texture=TEXTUUR_MUUR,
-                        texture_scale=(1.15, 1.15),
-                        color=kleur(170, 156, 124),
+                        texture_scale=(1.05, 1.05),
+                        color=kleur(146, 144, 112),
                         collider="box",
                     )
                     self.muren.append(muur)
@@ -304,22 +305,61 @@ class Krampus3000Spel:
             model="cube",
             position=self.deur_plek,
             scale=(2.2, 3.2, 0.45),
-            color=kleur(110, 44, 58),
+            texture=TEXTUUR_DEUR,
+            texture_scale=(1.4, 1.2),
+            color=kleur(112, 86, 62),
             collider="box",
         )
+        self.maak_deur_details(self.deur, accent_kleur=(180, 164, 128))
         self.deur_glans = Entity(
             parent=self.deur,
             model="cube",
-            scale=(0.18, 0.3, 1.04),
-            x=0.7,
-            y=0.1,
-            color=kleur(255, 240, 210, 120),
+            scale=(0.05, 0.22, 1.04),
+            x=0.78,
+            y=0.05,
+            color=kleur(205, 182, 150, 95),
         )
 
         # Licht maakt de kamer beter zichtbaar maar nog steeds spannend.
-        self.ambient_licht = AmbientLight(color=kleur(118, 98, 78, 0.42))
-        self.richting_licht = DirectionalLight(color=kleur(255, 205, 150, 0.18))
+        self.ambient_licht = AmbientLight(color=kleur(108, 96, 78, 0.48))
+        self.richting_licht = DirectionalLight(color=kleur(250, 205, 150, 0.14))
         self.richting_licht.look_at(Vec3(1, -2, -1))
+
+    def maak_deur_details(self, deur, accent_kleur=None):
+        """Geef een deur oude houten details."""
+        deur.frame_boven = Entity(
+            parent=deur,
+            model="cube",
+            position=(0, 1.33, 0),
+            scale=(1.02, 0.1, 1.04),
+            color=kleur(70, 48, 31),
+        )
+        deur.frame_onder = Entity(
+            parent=deur,
+            model="cube",
+            position=(0, -1.33, 0),
+            scale=(1.02, 0.1, 1.04),
+            color=kleur(70, 48, 31),
+        )
+        deur.handvat = Entity(
+            parent=deur,
+            model="cube",
+            position=(0.34, 0.02, 0.26),
+            scale=(0.06, 0.22, 0.08),
+            color=kleur(165, 140, 104),
+        )
+        deur.accent = Entity(
+            parent=deur,
+            model="cube",
+            position=(-0.33, 0, 0.24),
+            scale=(0.06, 2.45, 0.05),
+            color=kleur(78, 58, 38),
+        )
+        if accent_kleur is None:
+            deur.accent.visible = False
+        else:
+            deur.accent.visible = True
+            deur.accent.color = kleur(accent_kleur[0], accent_kleur[1], accent_kleur[2], 210)
 
     def maak_klikdeur(self, kolom, rij, plek):
         """Maak een gewone deur die je met een klik kunt openen."""
@@ -328,9 +368,12 @@ class Krampus3000Spel:
             model="cube",
             position=(plek.x, 1.6, plek.z),
             scale=schaal,
-            color=kleur(126, 66, 152),
+            texture=TEXTUUR_DEUR,
+            texture_scale=(1.3, 1.15),
+            color=kleur(108, 82, 58),
             collider="box",
         )
+        self.maak_deur_details(deur)
         deur.gesloten_positie = Vec3(plek.x, 1.6, plek.z)
         deur.gesloten_scale = Vec3(schaal.x, schaal.y, schaal.z)
         deur.open_positie = Vec3(plek.x, 0.22, plek.z)
@@ -352,8 +395,18 @@ class Krampus3000Spel:
             model="cube",
             position=(plek.x, 1.6, plek.z),
             scale=schaal,
-            color=kleur(basis_kleur[0], basis_kleur[1], basis_kleur[2]),
+            texture=TEXTUUR_DEUR,
+            texture_scale=(1.3, 1.15),
+            color=kleur(104, 78, 56),
             collider="box",
+        )
+        self.maak_deur_details(
+            deur,
+            accent_kleur=(
+                min(255, basis_kleur[0] + 8),
+                min(255, basis_kleur[1] + 8),
+                min(255, basis_kleur[2] + 8),
+            ),
         )
         deur.gesloten_positie = Vec3(plek.x, 1.6, plek.z)
         deur.gesloten_scale = Vec3(schaal.x, schaal.y, schaal.z)
@@ -561,11 +614,13 @@ class Krampus3000Spel:
         """Laat de uitgang zien als alle sleutels binnen zijn."""
         self.heeft_sleutel = len(self.gevonden_sleutels) == len(SLEUTEL_INFO)
         if self.heeft_sleutel:
-            self.deur.color = kleur(70, 160, 96)
-            self.deur_glans.color = kleur(210, 255, 220, 170)
+            self.deur.color = kleur(130, 102, 74)
+            self.deur.accent.color = kleur(186, 174, 130, 220)
+            self.deur_glans.color = kleur(225, 214, 182, 145)
         else:
-            self.deur.color = kleur(110, 44, 58)
-            self.deur_glans.color = kleur(255, 240, 210, 120)
+            self.deur.color = kleur(112, 86, 62)
+            self.deur.accent.color = kleur(132, 114, 86, 200)
+            self.deur_glans.color = kleur(205, 182, 150, 95)
 
     def werk_tekst_bij(self):
         """Zet de goede tekst op het scherm."""
@@ -635,12 +690,12 @@ class Krampus3000Spel:
         if open_zetten:
             deur.position = deur.open_positie
             deur.scale = deur.open_scale
-            deur.color = kleur(90, 180, 120)
+            deur.color = kleur(128, 100, 72)
             deur.collider = None
         else:
             deur.position = deur.gesloten_positie
             deur.scale = deur.gesloten_scale
-            deur.color = kleur(126, 66, 152)
+            deur.color = kleur(108, 82, 58)
             deur.collider = "box"
         if not open_zetten:
             deur.krampus_auto_dicht_timer = 0.0
@@ -653,18 +708,22 @@ class Krampus3000Spel:
         if open_zetten:
             deur.position = deur.open_positie
             deur.scale = deur.open_scale
-            deur.color = kleur(90, 180, 120)
+            deur.color = kleur(130, 102, 74)
             deur.collider = None
+            deur.accent.color = kleur(basis_kleur[0], basis_kleur[1], basis_kleur[2], 210)
         else:
             deur.position = deur.gesloten_positie
             deur.scale = deur.gesloten_scale
             if deur.sleutel_id in self.gevonden_sleutels:
-                deur.color = kleur(basis_kleur[0], basis_kleur[1], basis_kleur[2])
+                deur.color = kleur(104, 78, 56)
+                deur.accent.color = kleur(basis_kleur[0], basis_kleur[1], basis_kleur[2], 210)
             else:
-                deur.color = kleur(
-                    max(40, basis_kleur[0] - 90),
-                    max(40, basis_kleur[1] - 90),
-                    max(40, basis_kleur[2] - 90),
+                deur.color = kleur(90, 68, 48)
+                deur.accent.color = kleur(
+                    max(50, basis_kleur[0] - 110),
+                    max(50, basis_kleur[1] - 110),
+                    max(50, basis_kleur[2] - 110),
+                    170,
                 )
             deur.collider = "box"
         if not open_zetten:
