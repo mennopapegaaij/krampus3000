@@ -38,6 +38,9 @@ KRAMPUS_WEGPUNT_BEREIK = 0.35
 KRAMPUS_DEUR_AFSTAND = 1.35
 KRAMPUS_DEUR_AUTO_DICHT_TIJD = 1.6
 KRAMPUS_GELUID_AFSTAND = 30
+TEXTUUR_VLOER = "textures/vloer_hout.ppm"
+TEXTUUR_PLAFOND = "textures/plafond_hout.ppm"
+TEXTUUR_MUUR = "textures/muur_vies.ppm"
 
 SLEUTEL_INFO = {
     "a": {"deur": "1", "naam": "rode", "kleur": (236, 92, 92)},
@@ -242,15 +245,20 @@ class Krampus3000Spel:
         self.vloer = Entity(
             model="plane",
             scale=(vloer_breedte + 10, 1, vloer_diepte + 10),
-            color=kleur(34, 24, 34),
-            texture_scale=(18, 18),
+            texture=TEXTUUR_VLOER,
+            texture_scale=(8, 8),
+            color=kleur(214, 196, 178),
             collider="box",
         )
         self.plafond = Entity(
-            model="cube",
-            scale=(vloer_breedte + 10, 0.5, vloer_diepte + 10),
-            position=(0, 4.4, 0),
-            color=kleur(20, 12, 18),
+            model="plane",
+            scale=(vloer_breedte + 10, 1, vloer_diepte + 10),
+            position=(0, 4.35, 0),
+            rotation=(180, 0, 0),
+            texture=TEXTUUR_PLAFOND,
+            texture_scale=(7, 7),
+            color=kleur(180, 155, 135),
+            double_sided=True,
         )
 
         self.muren = []
@@ -271,14 +279,10 @@ class Krampus3000Spel:
                         model="cube",
                         position=(plek.x, 2, plek.z),
                         scale=(TILE_GROOTTE, 4, TILE_GROOTTE),
-                        color=kleur(72, 44, 78),
+                        texture=TEXTUUR_MUUR,
+                        texture_scale=(1.15, 1.15),
+                        color=kleur(170, 156, 124),
                         collider="box",
-                    )
-                    Entity(
-                        parent=muur,
-                        model="cube",
-                        scale=1.02,
-                        color=kleur(120, 84, 132, 70),
                     )
                     self.muren.append(muur)
                 elif teken == "S":
@@ -313,8 +317,8 @@ class Krampus3000Spel:
         )
 
         # Licht maakt de kamer beter zichtbaar maar nog steeds spannend.
-        self.ambient_licht = AmbientLight(color=kleur(110, 90, 100, 0.35))
-        self.richting_licht = DirectionalLight(color=kleur(255, 220, 210, 0.25))
+        self.ambient_licht = AmbientLight(color=kleur(118, 98, 78, 0.42))
+        self.richting_licht = DirectionalLight(color=kleur(255, 205, 150, 0.18))
         self.richting_licht.look_at(Vec3(1, -2, -1))
 
     def maak_klikdeur(self, kolom, rij, plek):
