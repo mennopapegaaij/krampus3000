@@ -40,7 +40,7 @@ KRAMPUS_DEUR_AUTO_DICHT_TIJD = 1.6
 KRAMPUS_GELUID_AFSTAND = 30
 TEXTUUR_VLOER = "textures/vloer_hout.ppm"
 TEXTUUR_PLAFOND = "textures/plafond_hout.ppm"
-TEXTUUR_MUUR = "textures/muur_vies.ppm"
+TEXTUUR_MUUR = "textures/muur_hout.ppm"
 TEXTUUR_DEUR = "textures/deur_oud.ppm"
 
 SLEUTEL_INFO = {
@@ -281,8 +281,8 @@ class Krampus3000Spel:
                         position=(plek.x, 2, plek.z),
                         scale=(TILE_GROOTTE, 4, TILE_GROOTTE),
                         texture=TEXTUUR_MUUR,
-                        texture_scale=(1.05, 1.05),
-                        color=kleur(146, 144, 112),
+                        texture_scale=(1.35, 0.9),
+                        color=kleur(150, 126, 102),
                         collider="box",
                     )
                     self.muren.append(muur)
