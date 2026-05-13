@@ -700,55 +700,6 @@ class Krampus3000Spel:
             color=bot_kleur,
         )
 
-        self.krampus_hoorn_links_onder = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(-0.42, 3.2, 0.08),
-            rotation=(12, -10, 42),
-            scale=(0.18, 0.68, 0.18),
-            color=bot_kleur,
-        )
-        self.krampus_hoorn_links_midden = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(-0.72, 3.58, -0.08),
-            rotation=(34, -24, 70),
-            scale=(0.15, 0.62, 0.15),
-            color=bot_kleur,
-        )
-        self.krampus_hoorn_links_punt = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(-0.88, 3.9, -0.3),
-            rotation=(56, -28, 96),
-            scale=(0.1, 0.44, 0.1),
-            color=bot_kleur,
-        )
-        self.krampus_hoorn_rechts_onder = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(0.42, 3.2, 0.08),
-            rotation=(12, 10, -42),
-            scale=(0.18, 0.68, 0.18),
-            color=bot_kleur,
-        )
-        self.krampus_hoorn_rechts_midden = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(0.72, 3.58, -0.08),
-            rotation=(34, 24, -70),
-            scale=(0.15, 0.62, 0.15),
-            color=bot_kleur,
-        )
-        self.krampus_hoorn_rechts_punt = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(0.88, 3.9, -0.3),
-            rotation=(56, 28, -96),
-            scale=(0.1, 0.44, 0.1),
-            color=bot_kleur,
-        )
-
     def maak_sleutels(self):
         """Maak alle speciale sleutels."""
         self.sleutels = []
