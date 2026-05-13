@@ -638,65 +638,97 @@ class Krampus3000Spel:
         self.krampus_hoorn_links_onder = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.34, 3.18, 0.04),
-            rotation=(16, -8, 28),
-            scale=(0.16, 0.54, 0.16),
+            position=(-0.32, 3.16, 0.08),
+            rotation=(14, -6, 24),
+            scale=(0.18, 0.62, 0.18),
+            color=hoorn_schaduw,
+        )
+        self.krampus_hoorn_links_bocht = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(-0.46, 3.42, -0.01),
+            rotation=(24, -12, 42),
+            scale=(0.16, 0.5, 0.16),
             color=hoorn_schaduw,
         )
         self.krampus_hoorn_links_midden = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.58, 3.5, -0.08),
-            rotation=(34, -20, 58),
-            scale=(0.13, 0.48, 0.13),
+            position=(-0.6, 3.66, -0.14),
+            rotation=(38, -22, 62),
+            scale=(0.14, 0.52, 0.14),
+            color=hoorn_kleur,
+        )
+        self.krampus_hoorn_links_boven = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(-0.68, 3.88, -0.24),
+            rotation=(48, -24, 72),
+            scale=(0.11, 0.4, 0.11),
             color=hoorn_kleur,
         )
         self.krampus_hoorn_links_punt = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.72, 3.76, -0.24),
-            rotation=(56, -26, 82),
-            scale=(0.09, 0.34, 0.09),
+            position=(-0.74, 4.05, -0.34),
+            rotation=(62, -28, 88),
+            scale=(0.08, 0.26, 0.08),
             color=hoorn_kleur,
         )
         self.krampus_hoorn_links_rood = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.49, 3.38, -0.03),
-            rotation=(30, -16, 48),
-            scale=(0.16, 0.08, 0.16),
+            position=(-0.54, 3.55, -0.08),
+            rotation=(34, -18, 54),
+            scale=(0.17, 0.12, 0.17),
             color=hoorn_rood,
         )
         self.krampus_hoorn_rechts_onder = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.34, 3.18, 0.04),
-            rotation=(16, 8, -28),
-            scale=(0.16, 0.54, 0.16),
+            position=(0.32, 3.16, 0.08),
+            rotation=(14, 6, -24),
+            scale=(0.18, 0.62, 0.18),
+            color=hoorn_schaduw,
+        )
+        self.krampus_hoorn_rechts_bocht = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0.46, 3.42, -0.01),
+            rotation=(24, 12, -42),
+            scale=(0.16, 0.5, 0.16),
             color=hoorn_schaduw,
         )
         self.krampus_hoorn_rechts_midden = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.58, 3.5, -0.08),
-            rotation=(34, 20, -58),
-            scale=(0.13, 0.48, 0.13),
+            position=(0.6, 3.66, -0.14),
+            rotation=(38, 22, -62),
+            scale=(0.14, 0.52, 0.14),
+            color=hoorn_kleur,
+        )
+        self.krampus_hoorn_rechts_boven = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0.68, 3.88, -0.24),
+            rotation=(48, 24, -72),
+            scale=(0.11, 0.4, 0.11),
             color=hoorn_kleur,
         )
         self.krampus_hoorn_rechts_punt = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.72, 3.76, -0.24),
-            rotation=(56, 26, -82),
-            scale=(0.09, 0.34, 0.09),
+            position=(0.74, 4.05, -0.34),
+            rotation=(62, 28, -88),
+            scale=(0.08, 0.26, 0.08),
             color=hoorn_kleur,
         )
         self.krampus_hoorn_rechts_rood = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.49, 3.38, -0.03),
-            rotation=(30, 16, -48),
-            scale=(0.16, 0.08, 0.16),
+            position=(0.54, 3.55, -0.08),
+            rotation=(34, 18, -54),
+            scale=(0.17, 0.12, 0.17),
             color=hoorn_rood,
         )
         self.krampus_oog_links = Entity(
