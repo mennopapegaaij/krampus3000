@@ -42,6 +42,8 @@ TEXTUUR_VLOER = "textures/vloer_hout.ppm"
 TEXTUUR_PLAFOND = "textures/plafond_hout.ppm"
 TEXTUUR_MUUR = "textures/muur_hout.ppm"
 TEXTUUR_DEUR = "textures/deur_oud.ppm"
+TEXTUUR_KRAMPUS_VACHT = "textures/krampus_vacht.ppm"
+TEXTUUR_KRAMPUS_HUID = "textures/krampus_huid.ppm"
 
 SLEUTEL_INFO = {
     "a": {"deur": "1", "naam": "rode", "kleur": (236, 92, 92)},
@@ -451,238 +453,299 @@ class Krampus3000Spel:
         )
 
     def maak_krampus(self):
-        """Maak Krampus als een Oostenrijkse winterduivel."""
+        """Maak Krampus realistischer met donkere vacht en een enge kop."""
         self.krampus = Entity(position=self.krampus_start)
-        vacht_donker = kleur(38, 22, 18)
-        vacht_midden = kleur(58, 36, 28)
-        huid_donker = kleur(96, 56, 44)
-        bot_kleur = kleur(214, 197, 172)
+        vacht_donker = kleur(36, 24, 20)
+        vacht_licht = kleur(62, 44, 34)
+        huid_donker = kleur(84, 50, 40)
+        bot_kleur = kleur(218, 200, 176)
 
         self.krampus_lijf = Entity(
             parent=self.krampus,
-            model="cube",
-            y=1.28,
-            scale=(1.15, 2.0, 0.98),
+            model="sphere",
+            position=(0, 1.45, 0.02),
+            scale=(1.26, 2.25, 1.04),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(1.2, 1.8),
             color=vacht_donker,
         )
-        self.krampus_borst = Entity(
+        self.krampus_buik = Entity(
             parent=self.krampus,
             model="sphere",
-            position=(0, 1.22, 0.18),
-            scale=(1.0, 1.35, 0.78),
-            color=vacht_midden,
+            position=(0, 1.12, 0.24),
+            scale=(0.94, 1.16, 0.72),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(1.0, 1.2),
+            color=vacht_licht,
         )
-        self.krampus_schouder_links = Entity(
+        self.krampus_rug = Entity(
             parent=self.krampus,
             model="sphere",
-            position=(-0.52, 1.95, 0.02),
-            scale=(0.48, 0.62, 0.52),
+            position=(0, 1.74, -0.24),
+            scale=(1.12, 0.98, 0.9),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(1.0, 1.0),
             color=vacht_donker,
-        )
-        self.krampus_schouder_rechts = Entity(
-            parent=self.krampus,
-            model="sphere",
-            position=(0.52, 1.95, 0.02),
-            scale=(0.48, 0.62, 0.52),
-            color=vacht_donker,
-        )
-        self.krampus_kop = Entity(
-            parent=self.krampus,
-            model="sphere",
-            y=2.52,
-            scale=1.08,
-            color=huid_donker,
-        )
-        self.krampus_snuit = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(0, 2.36, 0.58),
-            scale=(0.46, 0.34, 0.62),
-            color=kleur(68, 46, 38),
-        )
-        self.krampus_neus = Entity(
-            parent=self.krampus,
-            model="sphere",
-            position=(0, 2.34, 0.88),
-            scale=(0.18, 0.14, 0.14),
-            color=kleur(24, 18, 18),
-        )
-        self.krampus_oog_links = Entity(
-            parent=self.krampus,
-            model="sphere",
-            position=(-0.2, 2.58, 0.46),
-            scale=0.14,
-            color=kleur(255, 188, 78),
-        )
-        self.krampus_oog_rechts = Entity(
-            parent=self.krampus,
-            model="sphere",
-            position=(0.2, 2.58, 0.46),
-            scale=0.14,
-            color=kleur(255, 188, 78),
-        )
-        self.krampus_wenkbrauw_links = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(-0.23, 2.76, 0.34),
-            rotation=(0, 0, 18),
-            scale=(0.24, 0.07, 0.12),
-            color=vacht_donker,
-        )
-        self.krampus_wenkbrauw_rechts = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(0.23, 2.76, 0.34),
-            rotation=(0, 0, -18),
-            scale=(0.24, 0.07, 0.12),
-            color=vacht_donker,
-        )
-        self.krampus_baard = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(0, 2.0, 0.34),
-            rotation=(18, 0, 0),
-            scale=(0.34, 0.84, 0.16),
-            color=vacht_donker,
-        )
-        self.krampus_tong = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(0, 2.08, 0.7),
-            rotation=(28, 0, 0),
-            scale=(0.12, 0.52, 0.07),
-            color=kleur(150, 38, 44),
-        )
-        self.krampus_tand_links = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(-0.12, 2.16, 0.67),
-            rotation=(18, 0, 0),
-            scale=(0.06, 0.18, 0.06),
-            color=bot_kleur,
-        )
-        self.krampus_tand_rechts = Entity(
-            parent=self.krampus,
-            model="cube",
-            position=(0.12, 2.16, 0.67),
-            rotation=(18, 0, 0),
-            scale=(0.06, 0.18, 0.06),
-            color=bot_kleur,
         )
 
         self.krampus_arm_links = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.72, 1.28, 0.02),
-            rotation=(0, 0, 12),
-            scale=(0.25, 1.6, 0.25),
+            position=(-0.78, 1.22, 0.06),
+            rotation=(10, 0, 16),
+            scale=(0.28, 1.72, 0.3),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(0.6, 1.7),
             color=vacht_donker,
         )
         self.krampus_arm_rechts = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.72, 1.28, 0.02),
-            rotation=(0, 0, -12),
-            scale=(0.25, 1.6, 0.25),
+            position=(0.78, 1.22, 0.06),
+            rotation=(10, 0, -16),
+            scale=(0.28, 1.72, 0.3),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(0.6, 1.7),
             color=vacht_donker,
         )
         self.krampus_klauw_links = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.78, 0.34, 0.18),
-            rotation=(18, 0, 0),
-            scale=(0.18, 0.34, 0.12),
+            position=(-0.86, 0.22, 0.18),
+            rotation=(22, 0, 0),
+            scale=(0.2, 0.38, 0.14),
             color=bot_kleur,
         )
         self.krampus_klauw_rechts = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.78, 0.34, 0.18),
-            rotation=(18, 0, 0),
-            scale=(0.18, 0.34, 0.12),
+            position=(0.86, 0.22, 0.18),
+            rotation=(22, 0, 0),
+            scale=(0.2, 0.38, 0.14),
             color=bot_kleur,
         )
 
         self.krampus_been_links = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.28, 0.18, 0),
-            rotation=(0, 0, 6),
-            scale=(0.34, 1.34, 0.34),
+            position=(-0.3, 0.16, -0.02),
+            rotation=(0, 0, 7),
+            scale=(0.36, 1.46, 0.38),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(0.65, 1.4),
             color=vacht_donker,
         )
         self.krampus_been_rechts = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.28, 0.18, 0),
-            rotation=(0, 0, -6),
-            scale=(0.34, 1.34, 0.34),
+            position=(0.3, 0.16, -0.02),
+            rotation=(0, 0, -7),
+            scale=(0.36, 1.46, 0.38),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(0.65, 1.4),
             color=vacht_donker,
         )
         self.krampus_hoef_links = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.28, -0.62, 0.18),
-            rotation=(0, 0, 4),
-            scale=(0.28, 0.18, 0.42),
+            position=(-0.3, -0.7, 0.2),
+            rotation=(0, 0, 3),
+            scale=(0.3, 0.18, 0.46),
             color=bot_kleur,
         )
         self.krampus_hoef_rechts = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.28, -0.62, 0.18),
-            rotation=(0, 0, -4),
-            scale=(0.28, 0.18, 0.42),
+            position=(0.3, -0.7, 0.2),
+            rotation=(0, 0, -3),
+            scale=(0.3, 0.18, 0.46),
             color=bot_kleur,
         )
 
-        # Grote gebogen horens maken hem meteen meer Krampus.
+        self.krampus_nek = Entity(
+            parent=self.krampus,
+            model="sphere",
+            position=(0, 2.34, 0.02),
+            scale=(0.58, 0.48, 0.5),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(1.0, 1.0),
+            color=vacht_donker,
+        )
+        self.krampus_kop = Entity(
+            parent=self.krampus,
+            model="sphere",
+            position=(0, 2.72, 0.12),
+            scale=(1.0, 1.12, 1.06),
+            texture=TEXTUUR_KRAMPUS_HUID,
+            texture_scale=(1.0, 1.0),
+            color=huid_donker,
+        )
+        self.krampus_voorhoofd_vacht = Entity(
+            parent=self.krampus,
+            model="sphere",
+            position=(0, 2.92, 0.02),
+            scale=(0.78, 0.42, 0.62),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(1.0, 1.0),
+            color=vacht_donker,
+        )
+        self.krampus_snuit = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0, 2.52, 0.74),
+            scale=(0.48, 0.38, 0.82),
+            texture=TEXTUUR_KRAMPUS_HUID,
+            texture_scale=(1.0, 1.2),
+            color=kleur(78, 50, 42),
+        )
+        self.krampus_kaak = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0, 2.3, 0.6),
+            rotation=(10, 0, 0),
+            scale=(0.44, 0.18, 0.64),
+            texture=TEXTUUR_KRAMPUS_HUID,
+            texture_scale=(1.0, 1.0),
+            color=kleur(68, 42, 34),
+        )
+        self.krampus_neus = Entity(
+            parent=self.krampus,
+            model="sphere",
+            position=(0, 2.48, 1.1),
+            scale=(0.22, 0.16, 0.16),
+            color=kleur(18, 14, 14),
+        )
+        self.krampus_oor_links = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(-0.48, 2.84, 0.1),
+            rotation=(18, 0, 34),
+            scale=(0.12, 0.34, 0.08),
+            color=bot_kleur,
+        )
+        self.krampus_oor_rechts = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0.48, 2.84, 0.1),
+            rotation=(18, 0, -34),
+            scale=(0.12, 0.34, 0.08),
+            color=bot_kleur,
+        )
+        self.krampus_oog_links = Entity(
+            parent=self.krampus,
+            model="sphere",
+            position=(-0.19, 2.72, 0.56),
+            scale=0.13,
+            color=kleur(255, 102, 42),
+        )
+        self.krampus_oog_rechts = Entity(
+            parent=self.krampus,
+            model="sphere",
+            position=(0.19, 2.72, 0.56),
+            scale=0.13,
+            color=kleur(255, 102, 42),
+        )
+        self.krampus_wenkbrauw_links = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(-0.21, 2.9, 0.42),
+            rotation=(0, 0, 20),
+            scale=(0.26, 0.08, 0.12),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(1.0, 1.0),
+            color=vacht_donker,
+        )
+        self.krampus_wenkbrauw_rechts = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0.21, 2.9, 0.42),
+            rotation=(0, 0, -20),
+            scale=(0.26, 0.08, 0.12),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(1.0, 1.0),
+            color=vacht_donker,
+        )
+        self.krampus_baard = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0, 2.0, 0.44),
+            rotation=(22, 0, 0),
+            scale=(0.42, 1.02, 0.18),
+            texture=TEXTUUR_KRAMPUS_VACHT,
+            texture_scale=(0.8, 1.8),
+            color=vacht_donker,
+        )
+        self.krampus_tong = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0, 2.16, 0.88),
+            rotation=(34, 0, 0),
+            scale=(0.12, 0.6, 0.08),
+            color=kleur(154, 34, 38),
+        )
+        self.krampus_tand_links = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(-0.14, 2.28, 0.82),
+            rotation=(24, 0, 0),
+            scale=(0.06, 0.22, 0.06),
+            color=bot_kleur,
+        )
+        self.krampus_tand_rechts = Entity(
+            parent=self.krampus,
+            model="cube",
+            position=(0.14, 2.28, 0.82),
+            rotation=(24, 0, 0),
+            scale=(0.06, 0.22, 0.06),
+            color=bot_kleur,
+        )
+
         self.krampus_hoorn_links_onder = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.38, 3.08, 0.08),
-            rotation=(18, 0, 34),
-            scale=(0.16, 0.62, 0.16),
+            position=(-0.42, 3.2, 0.08),
+            rotation=(12, -10, 42),
+            scale=(0.18, 0.68, 0.18),
             color=bot_kleur,
         )
         self.krampus_hoorn_links_midden = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.62, 3.46, -0.05),
-            rotation=(36, -12, 62),
-            scale=(0.14, 0.56, 0.14),
+            position=(-0.72, 3.58, -0.08),
+            rotation=(34, -24, 70),
+            scale=(0.15, 0.62, 0.15),
             color=bot_kleur,
         )
         self.krampus_hoorn_links_punt = Entity(
             parent=self.krampus,
             model="cube",
-            position=(-0.78, 3.74, -0.22),
-            rotation=(54, -22, 88),
-            scale=(0.1, 0.42, 0.1),
+            position=(-0.88, 3.9, -0.3),
+            rotation=(56, -28, 96),
+            scale=(0.1, 0.44, 0.1),
             color=bot_kleur,
         )
         self.krampus_hoorn_rechts_onder = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.38, 3.08, 0.08),
-            rotation=(18, 0, -34),
-            scale=(0.16, 0.62, 0.16),
+            position=(0.42, 3.2, 0.08),
+            rotation=(12, 10, -42),
+            scale=(0.18, 0.68, 0.18),
             color=bot_kleur,
         )
         self.krampus_hoorn_rechts_midden = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.62, 3.46, -0.05),
-            rotation=(36, 12, -62),
-            scale=(0.14, 0.56, 0.14),
+            position=(0.72, 3.58, -0.08),
+            rotation=(34, 24, -70),
+            scale=(0.15, 0.62, 0.15),
             color=bot_kleur,
         )
         self.krampus_hoorn_rechts_punt = Entity(
             parent=self.krampus,
             model="cube",
-            position=(0.78, 3.74, -0.22),
-            rotation=(54, 22, -88),
-            scale=(0.1, 0.42, 0.1),
+            position=(0.88, 3.9, -0.3),
+            rotation=(56, 28, -96),
+            scale=(0.1, 0.44, 0.1),
             color=bot_kleur,
         )
 
