@@ -459,6 +459,7 @@ class Krampus3000Spel:
         vacht_licht = kleur(62, 44, 34)
         huid_donker = kleur(84, 50, 40)
         bot_kleur = kleur(218, 200, 176)
+        oor_hand_kleur = kleur(34, 22, 16)
 
         self.krampus_lijf = Entity(
             parent=self.krampus,
@@ -514,7 +515,7 @@ class Krampus3000Spel:
             position=(-0.86, 0.22, 0.18),
             rotation=(22, 0, 0),
             scale=(0.2, 0.38, 0.14),
-            color=bot_kleur,
+            color=oor_hand_kleur,
         )
         self.krampus_klauw_rechts = Entity(
             parent=self.krampus,
@@ -522,7 +523,7 @@ class Krampus3000Spel:
             position=(0.86, 0.22, 0.18),
             rotation=(22, 0, 0),
             scale=(0.2, 0.38, 0.14),
-            color=bot_kleur,
+            color=oor_hand_kleur,
         )
 
         self.krampus_been_links = Entity(
@@ -621,7 +622,7 @@ class Krampus3000Spel:
             position=(-0.48, 2.84, 0.1),
             rotation=(18, 0, 34),
             scale=(0.12, 0.34, 0.08),
-            color=bot_kleur,
+            color=oor_hand_kleur,
         )
         self.krampus_oor_rechts = Entity(
             parent=self.krampus,
@@ -629,7 +630,7 @@ class Krampus3000Spel:
             position=(0.48, 2.84, 0.1),
             rotation=(18, 0, -34),
             scale=(0.12, 0.34, 0.08),
-            color=bot_kleur,
+            color=oor_hand_kleur,
         )
         self.krampus_oog_links = Entity(
             parent=self.krampus,
