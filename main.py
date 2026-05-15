@@ -123,6 +123,13 @@ def maak_kaart():
         (14, 9),
     ]
     open_kamers = {start_kamer, eind_kamer, krampus_kamer, *sleutel_kamers.values(), *kast_kamers}
+    slot_deuren = {
+        "1": ((3, 3), (4, 3), "verticaal"),
+        "2": ((7, 4), (7, 5), "horizontaal"),
+        "3": ((10, 2), (11, 2), "verticaal"),
+        "4": ((12, 7), (12, 8), "horizontaal"),
+        "5": ((14, 10), (15, 10), "verticaal"),
+    }
     dichte_kamers = set()
 
     for kamer_rij in range(kamer_rijen):
@@ -133,19 +140,81 @@ def maak_kaart():
             if (kamer_kolom + kamer_rij * 2) % 3 == 0:
                 dichte_kamers.add(kamer)
 
-    def maak_pad_tussen(begin, einde):
-        huidig = begin
-        while huidig[0] != einde[0]:
-            stap = 1 if einde[0] > huidig[0] else -1
-            huidig = (huidig[0] + stap, huidig[1])
-            dichte_kamers.discard(huidig)
-        while huidig[1] != einde[1]:
-            stap = 1 if einde[1] > huidig[1] else -1
-            huidig = (huidig[0], huidig[1] + stap)
-            dichte_kamers.discard(huidig)
+    for kamer_a, kamer_b, _ in slot_deuren.values():
+        dichte_kamers.discard(kamer_a)
+        dichte_kamers.discard(kamer_b)
 
-    for doel_kamer in open_kamers:
-        maak_pad_tussen(start_kamer, doel_kamer)
+    def buren_van(kamer):
+        kamer_kolom, kamer_rij = kamer
+        for verschil_kolom, verschil_rij in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nieuwe_kolom = kamer_kolom + verschil_kolom
+            nieuwe_rij = kamer_rij + verschil_rij
+            if 0 <= nieuwe_kolom < kamer_kolommen and 0 <= nieuwe_rij < kamer_rijen:
+                yield nieuwe_kolom, nieuwe_rij
+
+    def vind_bereikbare_open_kamers():
+        gezien = {start_kamer}
+        wachtrij = deque([start_kamer])
+
+        while wachtrij:
+            huidige_kamer = wachtrij.popleft()
+            for buur_kamer in buren_van(huidige_kamer):
+                if buur_kamer in gezien or buur_kamer in dichte_kamers:
+                    continue
+                gezien.add(buur_kamer)
+                wachtrij.append(buur_kamer)
+
+        return gezien
+
+    def vind_goedkoop_pad(bron_kamers, doel_kamer):
+        bron_kamers = set(bron_kamers)
+        wachtrij = deque(bron_kamers)
+        kosten = {kamer: 0 for kamer in bron_kamers}
+        vorige_kamer = {}
+
+        while wachtrij:
+            huidige_kamer = wachtrij.popleft()
+            if huidige_kamer == doel_kamer:
+                break
+
+            for buur_kamer in buren_van(huidige_kamer):
+                extra_kosten = 1 if buur_kamer in dichte_kamers else 0
+                nieuwe_kosten = kosten[huidige_kamer] + extra_kosten
+
+                if buur_kamer in kosten and nieuwe_kosten >= kosten[buur_kamer]:
+                    continue
+
+                kosten[buur_kamer] = nieuwe_kosten
+                vorige_kamer[buur_kamer] = huidige_kamer
+                if extra_kosten == 0:
+                    wachtrij.appendleft(buur_kamer)
+                else:
+                    wachtrij.append(buur_kamer)
+
+        pad = []
+        huidige_kamer = doel_kamer
+        while huidige_kamer not in bron_kamers:
+            pad.append(huidige_kamer)
+            huidige_kamer = vorige_kamer[huidige_kamer]
+        pad.reverse()
+        return pad
+
+    bereikbare_open_kamers = vind_bereikbare_open_kamers()
+    belangrijke_kamers = [
+        *sleutel_kamers.values(),
+        *kast_kamers,
+        *[kamer_a for kamer_a, _, _ in slot_deuren.values()],
+        *[kamer_b for _, kamer_b, _ in slot_deuren.values()],
+        eind_kamer,
+        krampus_kamer,
+    ]
+
+    for doel_kamer in belangrijke_kamers:
+        if doel_kamer in bereikbare_open_kamers:
+            continue
+        for kamer in vind_goedkoop_pad(bereikbare_open_kamers, doel_kamer):
+            dichte_kamers.discard(kamer)
+        bereikbare_open_kamers = vind_bereikbare_open_kamers()
 
     for kamer_kolom, kamer_rij in dichte_kamers:
         start_kolom = kamer_kolom * kamer_breedte + 1
@@ -178,14 +247,8 @@ def maak_kaart():
                 deur_kolom = kamer_kolom * kamer_breedte + (3 if (kamer_kolom + kamer_rij) % 2 == 0 else 5)
                 openingen[(deur_kolom, muur_rij)] = "O" if (kamer_kolom + kamer_rij) % 6 == 3 else "."
 
-    slot_deuren = {
-        "1": (3, 3, "verticaal"),
-        "2": (7, 4, "horizontaal"),
-        "3": (10, 2, "verticaal"),
-        "4": (12, 7, "horizontaal"),
-        "5": (14, 10, "verticaal"),
-    }
-    for teken, (kamer_kolom, kamer_rij, richting) in slot_deuren.items():
+    for teken, (kamer_a, _, richting) in slot_deuren.items():
+        kamer_kolom, kamer_rij = kamer_a
         if richting == "verticaal":
             openingen[((kamer_kolom + 1) * kamer_breedte, kamer_rij * kamer_hoogte + 2)] = teken
         else:
