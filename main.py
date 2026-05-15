@@ -28,6 +28,7 @@ TITEL = "Krampus3000"
 TILE_GROOTTE = 4
 SPELER_SNELHEID = 5
 KRAMPUS_SNELHEID = SPELER_SNELHEID
+SNELHEID_OPTIES = [3, 4, 5, 6, 7]
 PIJL_DRAAI_SNELHEID = 120
 PIJL_KIJK_SNELHEID = 80
 KRAMPUS_STRAAL = 0.55
@@ -216,7 +217,7 @@ class Krampus3000Spel:
         self.sleutel_per_id = {}
         self.beste_tijd = None
         self.tijd_seconden = 0.0
-        self.status = "spelen"
+        self.status = "startscherm"
         self.heeft_sleutel = False
         self.melding = ""
         self.gevonden_sleutels = set()
@@ -231,6 +232,10 @@ class Krampus3000Spel:
         self.krampus_stap_geluid = None
         self.krampus_stap_timer = 0.0
         self.krampus_beweegt = False
+        self.speler_snelheid_index = SNELHEID_OPTIES.index(SPELER_SNELHEID)
+        self.krampus_snelheid_index = SNELHEID_OPTIES.index(KRAMPUS_SNELHEID)
+        self.speler_snelheid = SNELHEID_OPTIES[self.speler_snelheid_index]
+        self.krampus_snelheid = SNELHEID_OPTIES[self.krampus_snelheid_index]
 
         self.maak_wereld()
         self.maak_speler()
@@ -239,7 +244,7 @@ class Krampus3000Spel:
         self.maak_kasten()
         self.maak_ui()
         self.maak_geluiden()
-        self.reset_spel()
+        self.reset_spel(naar_startscherm=True)
 
     def maak_wereld(self):
         """Bouw de 3D kamer, muren en deuren."""
@@ -451,7 +456,7 @@ class Krampus3000Spel:
         """Maak de speler met een first-person camera."""
         self.speler = FirstPersonController(
             position=self.speler_start,
-            speed=SPELER_SNELHEID,
+            speed=self.speler_snelheid,
             origin_y=-0.45,
         )
         self.speler.gravity = 0
@@ -818,7 +823,22 @@ class Krampus3000Spel:
         self.krampus_stap_geluid = Audio("krampus_step.wav", autoplay=False, auto_destroy=False)
         self.krampus_stap_geluid.volume = 0
 
-    def reset_spel(self):
+    def verander_snelheid(self, wie, stap):
+        """Verander een gekozen snelheid op het startscherm."""
+        if wie == "speler":
+            naam_index = "speler_snelheid_index"
+            naam_snelheid = "speler_snelheid"
+        else:
+            naam_index = "krampus_snelheid_index"
+            naam_snelheid = "krampus_snelheid"
+
+        oude_index = getattr(self, naam_index)
+        nieuwe_index = max(0, min(len(SNELHEID_OPTIES) - 1, oude_index + stap))
+        setattr(self, naam_index, nieuwe_index)
+        setattr(self, naam_snelheid, SNELHEID_OPTIES[nieuwe_index])
+        self.werk_tekst_bij()
+
+    def reset_spel(self, naar_startscherm=False):
         """Begin opnieuw met een nieuw rondje."""
         if self.actieve_kast is not None:
             self.actieve_kast.collider = self.actieve_kast.normale_collider
@@ -826,7 +846,7 @@ class Krampus3000Spel:
         self.speler.position = self.speler_start
         self.speler.rotation = (0, 0, 0)
         self.speler.camera_pivot.rotation = (0, 0, 0)
-        self.speler.speed = SPELER_SNELHEID
+        self.speler.speed = self.speler_snelheid
         self.krampus.position = Vec3(self.krampus_start.x, KRAMPUS_BASIS_Y, self.krampus_start.z)
         self.krampus.rotation_y = 0
         self.gevonden_sleutels = set()
@@ -851,12 +871,15 @@ class Krampus3000Spel:
         self.krampus_stap_timer = 0.0
         self.krampus_beweegt = False
         self.heeft_sleutel = False
-        self.status = "spelen"
+        self.status = "startscherm" if naar_startscherm else "spelen"
         self.tijd_seconden = 0.0
-        self.melding = "Zoek 5 sleutels, open deuren en verstop je in een kast."
-        self.speler.enabled = True
+        if naar_startscherm:
+            self.melding = "Kies eerst snelheden en druk dan op Enter."
+        else:
+            self.melding = "Zoek 5 sleutels, open deuren en verstop je in een kast."
+        self.speler.enabled = not naar_startscherm
         self.krampus_stap_geluid.stop(destroy=False)
-        zet_muis_vergrendeld(True)
+        zet_muis_vergrendeld(not naar_startscherm)
         self.werk_uitgang_bij()
         self.werk_tekst_bij()
 
@@ -881,26 +904,50 @@ class Krampus3000Spel:
         gevonden = len(self.gevonden_sleutels)
         totaal = len(SLEUTEL_INFO)
 
-        if self.status == "spelen":
+        if self.status == "startscherm":
+            opdracht = "Kies hoe snel jij en Krampus lopen."
+            self.sleutel_tekst.text = f"Speler snelheid: {self.speler_snelheid}"
+            self.tijd_tekst.text = f"Krampus snelheid: {self.krampus_snelheid}"
+            self.beste_tijd_tekst.text = "A/D = speler | W/S = Krampus"
+            self.hint_tekst.text = "Druk op Enter om te starten."
+            self.besturing_tekst.text = "A/D of links/rechts = speler | W/S of boven/onder = Krampus | Enter = start"
+        elif self.status == "spelen":
             if self.verstopt_in_kast:
                 opdracht = "Je zit verstopt in een kast. Klik om eruit te komen."
             elif self.heeft_sleutel:
                 opdracht = "Je hebt alle 5 sleutels! Ren nu naar de groene deur."
             else:
                 opdracht = "Zoek de sleutels, open deuren en blijf weg van Krampus."
+            self.sleutel_tekst.text = f"Sleutels: {gevonden}/{totaal}"
+            self.tijd_tekst.text = f"Tijd: {self.tijd_seconden:.1f} sec"
+            if self.beste_tijd is None:
+                self.beste_tijd_tekst.text = "Beste tijd: -"
+            else:
+                self.beste_tijd_tekst.text = f"Beste tijd: {self.beste_tijd:.1f} sec"
+            self.hint_tekst.text = self.melding
+            self.besturing_tekst.text = "WASD = lopen | pijltjes of muis = kijken | klik = deur of kast | R = opnieuw | Esc = stoppen"
         elif self.status == "gewonnen":
             opdracht = "Je bent ontsnapt! Druk op R voor nog een potje."
+            self.sleutel_tekst.text = f"Sleutels: {gevonden}/{totaal}"
+            self.tijd_tekst.text = f"Tijd: {self.tijd_seconden:.1f} sec"
+            if self.beste_tijd is None:
+                self.beste_tijd_tekst.text = "Beste tijd: -"
+            else:
+                self.beste_tijd_tekst.text = f"Beste tijd: {self.beste_tijd:.1f} sec"
+            self.hint_tekst.text = self.melding
+            self.besturing_tekst.text = "WASD = lopen | pijltjes of muis = kijken | klik = deur of kast | R = opnieuw | Esc = stoppen"
         else:
             opdracht = "Krampus heeft je gepakt... Druk op R om opnieuw te beginnen."
+            self.sleutel_tekst.text = f"Sleutels: {gevonden}/{totaal}"
+            self.tijd_tekst.text = f"Tijd: {self.tijd_seconden:.1f} sec"
+            if self.beste_tijd is None:
+                self.beste_tijd_tekst.text = "Beste tijd: -"
+            else:
+                self.beste_tijd_tekst.text = f"Beste tijd: {self.beste_tijd:.1f} sec"
+            self.hint_tekst.text = self.melding
+            self.besturing_tekst.text = "WASD = lopen | pijltjes of muis = kijken | klik = deur of kast | R = opnieuw | Esc = stoppen"
 
         self.status_tekst.text = opdracht
-        self.sleutel_tekst.text = f"Sleutels: {gevonden}/{totaal}"
-        self.tijd_tekst.text = f"Tijd: {self.tijd_seconden:.1f} sec"
-        if self.beste_tijd is None:
-            self.beste_tijd_tekst.text = "Beste tijd: -"
-        else:
-            self.beste_tijd_tekst.text = f"Beste tijd: {self.beste_tijd:.1f} sec"
-        self.hint_tekst.text = self.melding
 
     def pak_sleutel(self, sleutel):
         """Pak een sleutel op."""
@@ -1026,7 +1073,7 @@ class Krampus3000Spel:
 
         if self.verstop_terug_plek is not None:
             self.speler.position = self.verstop_terug_plek
-        self.speler.speed = SPELER_SNELHEID
+        self.speler.speed = self.speler_snelheid
         self.verstopt_in_kast = False
         self.actieve_kast = None
         self.verstop_terug_plek = None
@@ -1306,7 +1353,7 @@ class Krampus3000Spel:
         if richting.length() <= 0.2:
             return
 
-        snelheid = KRAMPUS_SNELHEID
+        snelheid = self.krampus_snelheid
         stap_lengte = min(snelheid * time.dt, richting.length())
         stap = richting.normalized() * stap_lengte
         oude_positie = Vec3(self.krampus.x, 0, self.krampus.z)
@@ -1362,8 +1409,8 @@ class Krampus3000Spel:
         if self.verstopt_in_kast and self.actieve_kast is not None:
             self.speler.position = self.actieve_kast.verstop_plek
             self.speler.speed = 0
-        elif self.speler.speed != SPELER_SNELHEID:
-            self.speler.speed = SPELER_SNELHEID
+        elif self.speler.speed != self.speler_snelheid:
+            self.speler.speed = self.speler_snelheid
 
         # Met de pijltjes kun je ook rondkijken.
         if held_keys["left arrow"]:
@@ -1403,6 +1450,21 @@ class Krampus3000Spel:
 
     def input(self, toets):
         """Reageer op toetsen van de speler."""
+        if self.status == "startscherm":
+            if toets in ("a", "left arrow"):
+                self.verander_snelheid("speler", -1)
+            elif toets in ("d", "right arrow"):
+                self.verander_snelheid("speler", 1)
+            elif toets in ("s", "down arrow"):
+                self.verander_snelheid("krampus", -1)
+            elif toets in ("w", "up arrow"):
+                self.verander_snelheid("krampus", 1)
+            elif toets in ("enter", "space"):
+                self.reset_spel()
+            elif toets == "escape":
+                application.quit()
+            return
+
         if toets == "r":
             self.reset_spel()
         elif toets == "left mouse down" and self.status == "spelen":
