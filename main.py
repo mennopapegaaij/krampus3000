@@ -71,9 +71,13 @@ def kleur(rood, groen, blauw, alpha=1.0):
 
 
 def maak_kaart():
-    """Maak een 3x grotere kaart met veel kleine kamers zoals eerst."""
+    """Maak een 3x grotere kaart met kleine kamers en dichte blokkamers."""
     breedte = 129
     hoogte = 63
+    kamer_breedte = 8
+    kamer_hoogte = 5
+    kamer_kolommen = 16
+    kamer_rijen = 12
     kaart = []
 
     for rij in range(hoogte):
@@ -85,8 +89,8 @@ def maak_kaart():
                 nieuwe_rij.append(".")
         kaart.append(nieuwe_rij)
 
-    verticale_muren = list(range(8, breedte - 1, 8))
-    horizontale_muren = list(range(5, hoogte - 1, 5))
+    verticale_muren = list(range(kamer_breedte, breedte - 1, kamer_breedte))
+    horizontale_muren = list(range(kamer_hoogte, hoogte - 1, kamer_hoogte))
 
     for kolom in verticale_muren:
         for rij in range(1, hoogte - 1):
@@ -96,58 +100,108 @@ def maak_kaart():
         for kolom in range(1, breedte - 1):
             kaart[rij][kolom] = "#"
 
+    start_kamer = (0, 0)
+    eind_kamer = (15, 0)
+    krampus_kamer = (15, 11)
+    sleutel_kamers = {
+        "a": (2, 1),
+        "b": (6, 2),
+        "c": (9, 4),
+        "d": (11, 7),
+        "e": (13, 10),
+    }
+    kast_kamers = [
+        (1, 1),
+        (3, 2),
+        (5, 3),
+        (7, 4),
+        (10, 2),
+        (12, 5),
+        (14, 3),
+        (4, 8),
+        (8, 9),
+        (14, 9),
+    ]
+    open_kamers = {start_kamer, eind_kamer, krampus_kamer, *sleutel_kamers.values(), *kast_kamers}
+    dichte_kamers = set()
+
+    for kamer_rij in range(kamer_rijen):
+        for kamer_kolom in range(kamer_kolommen):
+            kamer = (kamer_kolom, kamer_rij)
+            if kamer in open_kamers:
+                continue
+            if (kamer_kolom + kamer_rij * 2) % 3 == 0:
+                dichte_kamers.add(kamer)
+
+    def maak_pad_tussen(begin, einde):
+        huidig = begin
+        while huidig[0] != einde[0]:
+            stap = 1 if einde[0] > huidig[0] else -1
+            huidig = (huidig[0] + stap, huidig[1])
+            dichte_kamers.discard(huidig)
+        while huidig[1] != einde[1]:
+            stap = 1 if einde[1] > huidig[1] else -1
+            huidig = (huidig[0], huidig[1] + stap)
+            dichte_kamers.discard(huidig)
+
+    for doel_kamer in open_kamers:
+        maak_pad_tussen(start_kamer, doel_kamer)
+
+    for kamer_kolom, kamer_rij in dichte_kamers:
+        start_kolom = kamer_kolom * kamer_breedte + 1
+        start_rij = kamer_rij * kamer_hoogte + 1
+        for rij in range(start_rij, start_rij + kamer_hoogte - 1):
+            for kolom in range(start_kolom, start_kolom + kamer_breedte - 1):
+                kaart[rij][kolom] = "#"
+
     openingen = {}
 
-    # Maak veel doorgangen zodat alle kleine kamers bereikbaar blijven.
-    for muur_index, kolom in enumerate(verticale_muren):
-        for kamer_index, start_rij in enumerate(range(1, hoogte - 1, 5)):
-            if start_rij + 3 >= hoogte - 1:
-                continue
-            rij = start_rij + (1 if (muur_index + kamer_index) % 2 == 0 else 3)
-            openingen[(kolom, rij)] = "O" if (muur_index + kamer_index) % 5 == 0 else "."
+    def kamer_midden(kamer):
+        kamer_kolom, kamer_rij = kamer
+        kolom = kamer_kolom * kamer_breedte + kamer_breedte // 2
+        rij = kamer_rij * kamer_hoogte + kamer_hoogte // 2
+        return kolom, rij
 
-    for muur_index, rij in enumerate(horizontale_muren):
-        for kamer_index, start_kolom in enumerate(range(1, breedte - 1, 8)):
-            if start_kolom + 6 >= breedte - 1:
+    for kamer_rij in range(kamer_rijen):
+        for kamer_kolom in range(kamer_kolommen):
+            kamer = (kamer_kolom, kamer_rij)
+            if kamer in dichte_kamers:
                 continue
-            kolom = start_kolom + (3 if (muur_index + kamer_index) % 2 == 0 else 5)
-            openingen[(kolom, rij)] = "O" if (muur_index + kamer_index) % 5 == 2 else "."
 
-    openingen.update(
-        {
-            (24, 18): "1",
-            (48, 33): "2",
-            (72, 13): "3",
-            (96, 43): "4",
-            (112, 53): "5",
-        }
-    )
+            if kamer_kolom + 1 < kamer_kolommen and (kamer_kolom + 1, kamer_rij) not in dichte_kamers:
+                muur_kolom = (kamer_kolom + 1) * kamer_breedte
+                deur_rij = kamer_rij * kamer_hoogte + (2 if (kamer_kolom + kamer_rij) % 2 == 0 else 3)
+                openingen[(muur_kolom, deur_rij)] = "O" if (kamer_kolom + kamer_rij) % 6 == 0 else "."
+
+            if kamer_rij + 1 < kamer_rijen and (kamer_kolom, kamer_rij + 1) not in dichte_kamers:
+                muur_rij = (kamer_rij + 1) * kamer_hoogte
+                deur_kolom = kamer_kolom * kamer_breedte + (3 if (kamer_kolom + kamer_rij) % 2 == 0 else 5)
+                openingen[(deur_kolom, muur_rij)] = "O" if (kamer_kolom + kamer_rij) % 6 == 3 else "."
+
+    slot_deuren = {
+        "1": (3, 3, "verticaal"),
+        "2": (7, 4, "horizontaal"),
+        "3": (10, 2, "verticaal"),
+        "4": (12, 7, "horizontaal"),
+        "5": (14, 10, "verticaal"),
+    }
+    for teken, (kamer_kolom, kamer_rij, richting) in slot_deuren.items():
+        if richting == "verticaal":
+            openingen[((kamer_kolom + 1) * kamer_breedte, kamer_rij * kamer_hoogte + 2)] = teken
+        else:
+            openingen[(kamer_kolom * kamer_breedte + 4, (kamer_rij + 1) * kamer_hoogte)] = teken
 
     plaatsingen = {
-        (2, 2): "S",
-        (124, 2): "D",
-        (124, 59): "M",
-        (13, 3): "a",
-        (69, 8): "b",
-        (109, 13): "c",
-        (45, 43): "d",
-        (93, 53): "e",
-        (5, 3): "C",
-        (11, 7): "C",
-        (19, 12): "C",
-        (27, 17): "C",
-        (35, 22): "C",
-        (43, 27): "C",
-        (51, 32): "C",
-        (59, 37): "C",
-        (67, 42): "C",
-        (75, 47): "C",
-        (83, 52): "C",
-        (91, 57): "C",
-        (99, 7): "C",
-        (107, 17): "C",
-        (115, 27): "C",
+        kamer_midden(start_kamer): "S",
+        kamer_midden(eind_kamer): "D",
+        kamer_midden(krampus_kamer): "M",
     }
+
+    for sleutel_id, kamer in sleutel_kamers.items():
+        plaatsingen[kamer_midden(kamer)] = sleutel_id
+
+    for kamer in kast_kamers:
+        plaatsingen[kamer_midden(kamer)] = "C"
 
     for plek, teken in openingen.items():
         kaart[plek[1]][plek[0]] = teken
