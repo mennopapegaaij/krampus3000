@@ -27,7 +27,7 @@ from ursina.prefabs.first_person_controller import FirstPersonController
 TITEL = "Krampus3000"
 TILE_GROOTTE = 4
 SPELER_SNELHEID = 5
-KRAMPUS_SNELHEID = 2.2
+KRAMPUS_SNELHEID = SPELER_SNELHEID
 PIJL_DRAAI_SNELHEID = 120
 PIJL_KIJK_SNELHEID = 80
 KRAMPUS_STRAAL = 0.55
@@ -1306,7 +1306,7 @@ class Krampus3000Spel:
         if richting.length() <= 0.2:
             return
 
-        snelheid = KRAMPUS_SNELHEID + (0.8 if self.heeft_sleutel else 0)
+        snelheid = KRAMPUS_SNELHEID
         stap_lengte = min(snelheid * time.dt, richting.length())
         stap = richting.normalized() * stap_lengte
         oude_positie = Vec3(self.krampus.x, 0, self.krampus.z)
