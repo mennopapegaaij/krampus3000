@@ -38,8 +38,12 @@ KRAMPUS_WEGPUNT_BEREIK = 0.35
 KRAMPUS_DEUR_AFSTAND = 1.35
 KRAMPUS_DEUR_AUTO_DICHT_TIJD = 1.6
 KRAMPUS_GELUID_AFSTAND = 30
-MUUR_HOOGTE = 5.6
 PLAFOND_HOOGTE = 5.95
+MUUR_HOOGTE = 6.1
+DEUR_HOOGTE = MUUR_HOOGTE
+DEUR_GESLOTEN_Y = DEUR_HOOGTE / 2
+DEUR_OPEN_HOOGTE = 0.25
+DEUR_OPEN_Y = DEUR_OPEN_HOOGTE / 2
 KRAMPUS_BASIS_Y = 0.85
 KRAMPUS_ZWEEF_HOOGTE = 0.05
 TEXTUUR_VLOER = "textures/vloer_hout.ppm"
@@ -199,7 +203,7 @@ class Krampus3000Spel:
 
         self.speler_start = Vec3(0, 1.5, 0)
         self.krampus_start = Vec3(0, 0, 0)
-        self.deur_plek = Vec3(0, 1.6, 0)
+        self.deur_plek = Vec3(0, DEUR_GESLOTEN_Y, 0)
         self.slot_sleutel_plekken = {}
         self.kast_plekken = []
         self.klik_deuren = []
@@ -297,7 +301,7 @@ class Krampus3000Spel:
                 elif teken == "M":
                     self.krampus_start = Vec3(plek.x, KRAMPUS_BASIS_Y, plek.z)
                 elif teken == "D":
-                    self.deur_plek = Vec3(plek.x, 1.6, plek.z)
+                    self.deur_plek = Vec3(plek.x, DEUR_GESLOTEN_Y, plek.z)
                 elif teken == "O":
                     self.maak_klikdeur(kolom, rij, plek)
                 elif teken in "12345":
@@ -310,7 +314,7 @@ class Krampus3000Spel:
         self.deur = Entity(
             model="cube",
             position=self.deur_plek,
-            scale=(2.2, 3.2, 0.45),
+            scale=(2.2, DEUR_HOOGTE, 0.45),
             texture=TEXTUUR_DEUR,
             texture_scale=(1.4, 1.2),
             color=kleur(112, 86, 62),
@@ -333,17 +337,19 @@ class Krampus3000Spel:
 
     def maak_deur_details(self, deur, accent_kleur=None):
         """Geef een deur oude houten details."""
+        frame_y = deur.scale_y / 2 - 0.18
+        accent_hoogte = max(0.4, deur.scale_y - 0.75)
         deur.frame_boven = Entity(
             parent=deur,
             model="cube",
-            position=(0, 1.33, 0),
+            position=(0, frame_y, 0),
             scale=(1.02, 0.1, 1.04),
             color=kleur(70, 48, 31),
         )
         deur.frame_onder = Entity(
             parent=deur,
             model="cube",
-            position=(0, -1.33, 0),
+            position=(0, -frame_y, 0),
             scale=(1.02, 0.1, 1.04),
             color=kleur(70, 48, 31),
         )
@@ -358,7 +364,7 @@ class Krampus3000Spel:
             parent=deur,
             model="cube",
             position=(-0.33, 0, 0.24),
-            scale=(0.06, 2.45, 0.05),
+            scale=(0.06, accent_hoogte, 0.05),
             color=kleur(78, 58, 38),
         )
         if accent_kleur is None:
@@ -372,7 +378,7 @@ class Krampus3000Spel:
         schaal = self.bepaal_deur_schaal(kolom, rij)
         deur = Entity(
             model="cube",
-            position=(plek.x, 1.6, plek.z),
+            position=(plek.x, DEUR_GESLOTEN_Y, plek.z),
             scale=schaal,
             texture=TEXTUUR_DEUR,
             texture_scale=(1.3, 1.15),
@@ -380,10 +386,10 @@ class Krampus3000Spel:
             collider="box",
         )
         self.maak_deur_details(deur)
-        deur.gesloten_positie = Vec3(plek.x, 1.6, plek.z)
+        deur.gesloten_positie = Vec3(plek.x, DEUR_GESLOTEN_Y, plek.z)
         deur.gesloten_scale = Vec3(schaal.x, schaal.y, schaal.z)
-        deur.open_positie = Vec3(plek.x, 0.22, plek.z)
-        deur.open_scale = Vec3(schaal.x, 0.25, schaal.z)
+        deur.open_positie = Vec3(plek.x, DEUR_OPEN_Y, plek.z)
+        deur.open_scale = Vec3(schaal.x, DEUR_OPEN_HOOGTE, schaal.z)
         deur.is_open = False
         deur.krampus_auto_dicht_timer = 0.0
         deur.krampus_opende_deur = False
@@ -399,7 +405,7 @@ class Krampus3000Spel:
         basis_kleur = SLEUTEL_INFO[sleutel_id]["kleur"]
         deur = Entity(
             model="cube",
-            position=(plek.x, 1.6, plek.z),
+            position=(plek.x, DEUR_GESLOTEN_Y, plek.z),
             scale=schaal,
             texture=TEXTUUR_DEUR,
             texture_scale=(1.3, 1.15),
@@ -414,10 +420,10 @@ class Krampus3000Spel:
                 min(255, basis_kleur[2] + 8),
             ),
         )
-        deur.gesloten_positie = Vec3(plek.x, 1.6, plek.z)
+        deur.gesloten_positie = Vec3(plek.x, DEUR_GESLOTEN_Y, plek.z)
         deur.gesloten_scale = Vec3(schaal.x, schaal.y, schaal.z)
-        deur.open_positie = Vec3(plek.x, 0.22, plek.z)
-        deur.open_scale = Vec3(schaal.x, 0.25, schaal.z)
+        deur.open_positie = Vec3(plek.x, DEUR_OPEN_Y, plek.z)
+        deur.open_scale = Vec3(schaal.x, DEUR_OPEN_HOOGTE, schaal.z)
         deur.is_open = False
         deur.krampus_auto_dicht_timer = 0.0
         deur.krampus_opende_deur = False
@@ -436,10 +442,10 @@ class Krampus3000Spel:
         onder_blok = KAART[rij + 1][kolom] == "#"
 
         if boven_blok and onder_blok:
-            return Vec3(0.45, 3.2, TILE_GROOTTE)
+            return Vec3(0.45, DEUR_HOOGTE, TILE_GROOTTE)
         if links_blok and rechts_blok:
-            return Vec3(TILE_GROOTTE, 3.2, 0.45)
-        return Vec3(1.4, 3.2, 1.4)
+            return Vec3(TILE_GROOTTE, DEUR_HOOGTE, 0.45)
+        return Vec3(1.4, DEUR_HOOGTE, 1.4)
 
     def maak_speler(self):
         """Maak de speler met een first-person camera."""
