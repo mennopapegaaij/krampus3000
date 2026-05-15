@@ -38,6 +38,10 @@ KRAMPUS_WEGPUNT_BEREIK = 0.35
 KRAMPUS_DEUR_AFSTAND = 1.35
 KRAMPUS_DEUR_AUTO_DICHT_TIJD = 1.6
 KRAMPUS_GELUID_AFSTAND = 30
+MUUR_HOOGTE = 5.6
+PLAFOND_HOOGTE = 5.95
+KRAMPUS_BASIS_Y = 0.85
+KRAMPUS_ZWEEF_HOOGTE = 0.05
 TEXTUUR_VLOER = "textures/vloer_hout.ppm"
 TEXTUUR_PLAFOND = "textures/plafond_hout.ppm"
 TEXTUUR_MUUR = "textures/muur_hout.ppm"
@@ -256,7 +260,7 @@ class Krampus3000Spel:
         self.plafond = Entity(
             model="plane",
             scale=(vloer_breedte + 10, 1, vloer_diepte + 10),
-            position=(0, 4.35, 0),
+            position=(0, PLAFOND_HOOGTE, 0),
             rotation=(180, 0, 0),
             texture=TEXTUUR_PLAFOND,
             texture_scale=(7, 7),
@@ -280,8 +284,8 @@ class Krampus3000Spel:
                 if teken == "#":
                     muur = Entity(
                         model="cube",
-                        position=(plek.x, 2, plek.z),
-                        scale=(TILE_GROOTTE, 4, TILE_GROOTTE),
+                        position=(plek.x, MUUR_HOOGTE / 2, plek.z),
+                        scale=(TILE_GROOTTE, MUUR_HOOGTE, TILE_GROOTTE),
                         texture=TEXTUUR_MUUR,
                         texture_scale=(1.35, 0.9),
                         color=kleur(150, 126, 102),
@@ -291,7 +295,7 @@ class Krampus3000Spel:
                 elif teken == "S":
                     self.speler_start = Vec3(plek.x, 1.5, plek.z)
                 elif teken == "M":
-                    self.krampus_start = Vec3(plek.x, 0, plek.z)
+                    self.krampus_start = Vec3(plek.x, KRAMPUS_BASIS_Y, plek.z)
                 elif teken == "D":
                     self.deur_plek = Vec3(plek.x, 1.6, plek.z)
                 elif teken == "O":
@@ -817,7 +821,7 @@ class Krampus3000Spel:
         self.speler.rotation = (0, 0, 0)
         self.speler.camera_pivot.rotation = (0, 0, 0)
         self.speler.speed = SPELER_SNELHEID
-        self.krampus.position = self.krampus_start
+        self.krampus.position = Vec3(self.krampus_start.x, KRAMPUS_BASIS_Y, self.krampus_start.z)
         self.krampus.rotation_y = 0
         self.gevonden_sleutels = set()
         self.verstopt_in_kast = False
@@ -849,6 +853,10 @@ class Krampus3000Spel:
         zet_muis_vergrendeld(True)
         self.werk_uitgang_bij()
         self.werk_tekst_bij()
+
+    def zet_krampus_hoogte(self):
+        """Houd Krampus boven de vloer met een klein zweefje."""
+        self.krampus.y = KRAMPUS_BASIS_Y + math.sin(self.tijd_seconden * 5) * KRAMPUS_ZWEEF_HOOGTE
 
     def werk_uitgang_bij(self):
         """Laat de uitgang zien als alle sleutels binnen zijn."""
@@ -1267,7 +1275,7 @@ class Krampus3000Spel:
         self.krampus_beweegt = False
         doel_plek = self.pak_krampus_jacht_plek()
         if doel_plek is None:
-            self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
+            self.zet_krampus_hoogte()
             return
 
         doel_tegel = wereld_naar_kaart(doel_plek)
@@ -1281,7 +1289,7 @@ class Krampus3000Spel:
         doelpunt = self.pak_krampus_doelpunt(doel_plek)
         if doelpunt is None:
             self.krampus.look_at_2d(doel_plek, "y")
-            self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
+            self.zet_krampus_hoogte()
             return
 
         richting = Vec3(
@@ -1304,7 +1312,7 @@ class Krampus3000Spel:
         else:
             self.krampus_beweegt = True
         self.krampus.look_at_2d(doelpunt, "y")
-        self.krampus.y = math.sin(self.tijd_seconden * 5) * 0.05
+        self.zet_krampus_hoogte()
 
     def draai_sleutels(self):
         """Laat alle sleutels draaien en zweven."""
