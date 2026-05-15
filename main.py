@@ -654,14 +654,18 @@ class Krampus3000Spel:
                     color=hoorn_kleur,
                 )
 
-            Entity(
-                parent=self.krampus,
-                model="cube",
-                position=(richting * 0.4, 3.84, -0.15),
-                rotation=(24, richting * 6, richting * -10),
-                scale=(0.06, 0.18, 0.06),
-                color=hoorn_kleur,
-            )
+            for x, y, z, schaal in (
+                (0.39, 3.82, -0.14, (0.09, 0.09, 0.09)),
+                (0.4, 3.89, -0.17, (0.075, 0.075, 0.075)),
+                (0.41, 3.95, -0.2, (0.06, 0.06, 0.06)),
+            ):
+                Entity(
+                    parent=self.krampus,
+                    model="sphere",
+                    position=(richting * x, y, z),
+                    scale=schaal,
+                    color=hoorn_kleur,
+                )
 
         maak_hoorn(-1)
         maak_hoorn(1)
