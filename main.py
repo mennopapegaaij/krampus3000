@@ -71,7 +71,7 @@ def kleur(rood, groen, blauw, alpha=1.0):
 
 
 def maak_kaart():
-    """Maak een veel grotere kaart met minder, maar volledig dichte kamers."""
+    """Maak een 3x grotere kaart met veel kleine kamers zoals eerst."""
     breedte = 129
     hoogte = 63
     kaart = []
@@ -85,53 +85,68 @@ def maak_kaart():
                 nieuwe_rij.append(".")
         kaart.append(nieuwe_rij)
 
-    for kolom in (43, 86):
+    verticale_muren = list(range(8, breedte - 1, 8))
+    horizontale_muren = list(range(5, hoogte - 1, 5))
+
+    for kolom in verticale_muren:
         for rij in range(1, hoogte - 1):
             kaart[rij][kolom] = "#"
 
-    for rij in (31,):
+    for rij in horizontale_muren:
         for kolom in range(1, breedte - 1):
             kaart[rij][kolom] = "#"
 
-    openingen = {
-        (43, 10): "O",
-        (43, 20): "1",
-        (43, 44): "O",
-        (43, 54): "5",
-        (86, 14): "O",
-        (86, 28): "2",
-        (86, 42): "3",
-        (86, 52): "O",
-        (12, 31): "O",
-        (28, 31): "O",
-        (47, 31): "4",
-        (67, 31): "O",
-        (83, 31): "O",
-        (101, 31): "O",
-        (117, 31): "O",
-    }
+    openingen = {}
+
+    # Maak veel doorgangen zodat alle kleine kamers bereikbaar blijven.
+    for muur_index, kolom in enumerate(verticale_muren):
+        for kamer_index, start_rij in enumerate(range(1, hoogte - 1, 5)):
+            if start_rij + 3 >= hoogte - 1:
+                continue
+            rij = start_rij + (1 if (muur_index + kamer_index) % 2 == 0 else 3)
+            openingen[(kolom, rij)] = "O" if (muur_index + kamer_index) % 5 == 0 else "."
+
+    for muur_index, rij in enumerate(horizontale_muren):
+        for kamer_index, start_kolom in enumerate(range(1, breedte - 1, 8)):
+            if start_kolom + 6 >= breedte - 1:
+                continue
+            kolom = start_kolom + (3 if (muur_index + kamer_index) % 2 == 0 else 5)
+            openingen[(kolom, rij)] = "O" if (muur_index + kamer_index) % 5 == 2 else "."
+
+    openingen.update(
+        {
+            (24, 18): "1",
+            (48, 33): "2",
+            (72, 13): "3",
+            (96, 43): "4",
+            (112, 53): "5",
+        }
+    )
 
     plaatsingen = {
-        (4, 4): "S",
-        (124, 4): "D",
-        (122, 58): "M",
-        (16, 8): "a",
-        (60, 8): "b",
-        (102, 12): "c",
-        (22, 44): "d",
-        (70, 48): "e",
-        (10, 10): "C",
-        (32, 22): "C",
-        (56, 18): "C",
-        (74, 24): "C",
-        (100, 9): "C",
-        (116, 24): "C",
-        (18, 38): "C",
-        (34, 55): "C",
-        (58, 40): "C",
-        (78, 54): "C",
-        (96, 40): "C",
-        (116, 50): "C",
+        (2, 2): "S",
+        (124, 2): "D",
+        (124, 59): "M",
+        (13, 3): "a",
+        (69, 8): "b",
+        (109, 13): "c",
+        (45, 43): "d",
+        (93, 53): "e",
+        (5, 3): "C",
+        (11, 7): "C",
+        (19, 12): "C",
+        (27, 17): "C",
+        (35, 22): "C",
+        (43, 27): "C",
+        (51, 32): "C",
+        (59, 37): "C",
+        (67, 42): "C",
+        (75, 47): "C",
+        (83, 52): "C",
+        (91, 57): "C",
+        (99, 7): "C",
+        (107, 17): "C",
+        (115, 27): "C",
     }
 
     for plek, teken in openingen.items():
