@@ -1092,10 +1092,14 @@ class Krampus3000Spel:
         """Laat de uitgang zien als alle sleutels binnen zijn."""
         self.heeft_sleutel = len(self.gevonden_sleutels) == len(SLEUTEL_INFO)
         if self.heeft_sleutel:
+            self.deur.enabled = True
+            self.deur.collider = "box"
             self.deur.color = kleur(130, 102, 74)
             self.deur.accent.color = kleur(186, 174, 130, 220)
             self.deur_glans.color = kleur(225, 214, 182, 145)
         else:
+            self.deur.enabled = False
+            self.deur.collider = None
             self.deur.color = kleur(112, 86, 62)
             self.deur.accent.color = kleur(132, 114, 86, 200)
             self.deur_glans.color = kleur(205, 182, 150, 95)
@@ -1116,7 +1120,7 @@ class Krampus3000Spel:
             if self.verstopt_in_kast:
                 opdracht = "Je zit verstopt in een kast. Klik om eruit te komen."
             elif self.heeft_sleutel:
-                opdracht = "Je hebt alle 5 sleutels! Ren nu naar de groene deur."
+                opdracht = "Je hebt alle 5 sleutels! Ren nu naar de uitgang."
             else:
                 opdracht = "Zoek de sleutels, open deuren en blijf weg van Krampus."
             self.sleutel_tekst.text = f"Sleutels: {gevonden}/{totaal}"
