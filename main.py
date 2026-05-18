@@ -32,6 +32,7 @@ SNELHEID_OPTIES = [3, 4, 5, 6, 7]
 PIJL_DRAAI_SNELHEID = 120
 PIJL_KIJK_SNELHEID = 80
 KRAMPUS_STRAAL = 0.55
+SPELER_STRAAL = 0.34
 DEUR_KLIK_AFSTAND = 5
 KAST_KLIK_AFSTAND = 3
 KRAMPUS_PAD_INTERVAL = 0.25
@@ -357,6 +358,7 @@ class Krampus3000Spel:
         self.krampus_snelheid_index = SNELHEID_OPTIES.index(KRAMPUS_SNELHEID)
         self.speler_snelheid = SNELHEID_OPTIES[self.speler_snelheid_index]
         self.krampus_snelheid = SNELHEID_OPTIES[self.krampus_snelheid_index]
+        self.laatste_veilige_speler_plek = Vec3(self.speler_start.x, self.speler_start.y, self.speler_start.z)
 
         self.maak_wereld()
         self.maak_speler()
@@ -582,6 +584,7 @@ class Krampus3000Spel:
         )
         self.speler.gravity = 0
         self.speler.cursor.color = kleur(255, 255, 255, 180)
+        self.laatste_veilige_speler_plek = Vec3(self.speler.x, 1.5, self.speler.z)
         self.speler_licht = PointLight(
             parent=self.speler,
             y=1.2,
@@ -968,6 +971,7 @@ class Krampus3000Spel:
         self.speler.rotation = (0, 0, 0)
         self.speler.camera_pivot.rotation = (0, 0, 0)
         self.speler.speed = self.speler_snelheid
+        self.laatste_veilige_speler_plek = Vec3(self.speler_start.x, 1.5, self.speler_start.z)
         self.krampus.position = Vec3(self.krampus_start.x, KRAMPUS_BASIS_Y, self.krampus_start.z)
         self.krampus.rotation_y = 0
         self.gevonden_sleutels = set()
@@ -1178,6 +1182,7 @@ class Krampus3000Spel:
         kast.collider = None
         self.speler.speed = 0
         self.speler.position = kast.verstop_plek
+        self.laatste_veilige_speler_plek = Vec3(self.speler.x, 1.5, self.speler.z)
         self.krampus_pad = []
         self.krampus_pad_timer = 0.0
         self.krampus_vlucht_plek = None
@@ -1194,6 +1199,7 @@ class Krampus3000Spel:
 
         if self.verstop_terug_plek is not None:
             self.speler.position = self.verstop_terug_plek
+            self.laatste_veilige_speler_plek = Vec3(self.speler.x, 1.5, self.speler.z)
         self.speler.speed = self.speler_snelheid
         self.verstopt_in_kast = False
         self.actieve_kast = None
@@ -1252,6 +1258,65 @@ class Krampus3000Spel:
             if self.plek_raakt_blok(nieuwe_x, nieuwe_z, klikdeur, KRAMPUS_STRAAL):
                 return True
         return False
+
+    def speler_botst_met_blok(self, nieuwe_x, nieuwe_z):
+        """Kijk of de speler tegen een dicht blok aan loopt."""
+        for muur in self.muren:
+            if self.plek_raakt_blok(nieuwe_x, nieuwe_z, muur, SPELER_STRAAL):
+                return True
+
+        if self.plek_raakt_blok(nieuwe_x, nieuwe_z, self.deur, SPELER_STRAAL):
+            return True
+
+        for deur in self.klik_deuren:
+            if deur.is_open:
+                continue
+            if self.plek_raakt_blok(nieuwe_x, nieuwe_z, deur, SPELER_STRAAL):
+                return True
+
+        for deur in self.slot_deuren:
+            if deur.is_open:
+                continue
+            if self.plek_raakt_blok(nieuwe_x, nieuwe_z, deur, SPELER_STRAAL):
+                return True
+
+        for kast in self.kasten:
+            if kast.collider is None:
+                continue
+            if self.plek_raakt_blok(nieuwe_x, nieuwe_z, kast, SPELER_STRAAL):
+                return True
+
+        return False
+
+    def corrigeer_speler_botsing(self):
+        """Zet de speler terug op een veilige plek als hij in een muur schuift."""
+        if self.verstopt_in_kast:
+            self.laatste_veilige_speler_plek = Vec3(self.speler.x, 1.5, self.speler.z)
+            return
+
+        oude_plek = self.laatste_veilige_speler_plek
+        doel_x = self.speler.x
+        doel_z = self.speler.z
+        verschil_x = doel_x - oude_plek.x
+        verschil_z = doel_z - oude_plek.z
+        afstand = math.sqrt(verschil_x * verschil_x + verschil_z * verschil_z)
+        stappen = max(1, math.ceil(afstand / 0.12))
+        veilige_x = oude_plek.x
+        veilige_z = oude_plek.z
+
+        for stap_nummer in range(1, stappen + 1):
+            factor = stap_nummer / stappen
+            stap_x = oude_plek.x + verschil_x * factor
+            stap_z = oude_plek.z + verschil_z * factor
+
+            if not self.speler_botst_met_blok(stap_x, veilige_z):
+                veilige_x = stap_x
+            if not self.speler_botst_met_blok(veilige_x, stap_z):
+                veilige_z = stap_z
+
+        self.speler.x = veilige_x
+        self.speler.z = veilige_z
+        self.laatste_veilige_speler_plek = Vec3(veilige_x, 1.5, veilige_z)
 
     def tegel_is_beloopbaar(self, kolom, rij):
         """Kijk of Krampus over deze kaartplek mag lopen."""
@@ -1532,6 +1597,8 @@ class Krampus3000Spel:
             self.speler.speed = 0
         elif self.speler.speed != self.speler_snelheid:
             self.speler.speed = self.speler_snelheid
+
+        self.corrigeer_speler_botsing()
 
         # Met de pijltjes kun je ook rondkijken.
         if held_keys["left arrow"]:
