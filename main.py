@@ -72,13 +72,13 @@ def kleur(rood, groen, blauw, alpha=1.0):
 
 
 def maak_kaart():
-    """Maak een 3x grotere kaart met kleine kamers en dichte blokkamers."""
-    breedte = 129
-    hoogte = 63
+    """Maak een kleinere kaart met even grote kamers en dichte blokkamers."""
     kamer_breedte = 8
     kamer_hoogte = 5
-    kamer_kolommen = 16
-    kamer_rijen = 12
+    kamer_kolommen = 8
+    kamer_rijen = 8
+    breedte = kamer_kolommen * kamer_breedte + 1
+    hoogte = kamer_rijen * kamer_hoogte + 1
     kaart = []
 
     for rij in range(hoogte):
@@ -102,34 +102,30 @@ def maak_kaart():
             kaart[rij][kolom] = "#"
 
     start_kamer = (0, 0)
-    eind_kamer = (15, 0)
-    krampus_kamer = (15, 11)
+    eind_kamer = (7, 0)
+    krampus_kamer = (7, 7)
     sleutel_kamers = {
-        "a": (2, 1),
-        "b": (6, 2),
-        "c": (9, 4),
-        "d": (11, 7),
-        "e": (13, 10),
+        "a": (1, 1),
+        "b": (2, 3),
+        "c": (4, 2),
+        "d": (5, 5),
+        "e": (6, 6),
     }
     kast_kamers = [
-        (1, 1),
-        (3, 2),
-        (5, 3),
-        (7, 4),
-        (10, 2),
-        (12, 5),
-        (14, 3),
-        (4, 8),
-        (8, 9),
-        (14, 9),
+        (1, 2),
+        (3, 1),
+        (3, 4),
+        (4, 6),
+        (5, 2),
+        (6, 4),
     ]
     open_kamers = {start_kamer, eind_kamer, krampus_kamer, *sleutel_kamers.values(), *kast_kamers}
     slot_deuren = {
-        "1": ((3, 3), (4, 3), "verticaal"),
-        "2": ((7, 4), (7, 5), "horizontaal"),
-        "3": ((10, 2), (11, 2), "verticaal"),
-        "4": ((12, 7), (12, 8), "horizontaal"),
-        "5": ((14, 10), (15, 10), "verticaal"),
+        "1": ((1, 1), (2, 1), "verticaal"),
+        "2": ((2, 3), (2, 4), "horizontaal"),
+        "3": ((4, 3), (5, 3), "verticaal"),
+        "4": ((5, 5), (5, 6), "horizontaal"),
+        "5": ((6, 6), (7, 6), "verticaal"),
     }
     dichte_kamers = set()
 
